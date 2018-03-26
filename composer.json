@@ -1,0 +1,17 @@
+{
+  "name": "sinri/ledoc",
+  "description": "The document system for organization",
+  "type": "project",
+  "license": "GPL-3.0-or-later",
+  "authors": [
+    {
+      "name": "Sinri Edogawa",
+      "email": "e.joshua.s.e@gmail.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "sinri/ark": "dev-master",
+    "cebe/markdown": "^1.1"
+  }
+}
