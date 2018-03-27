@@ -28,7 +28,7 @@ class SecurityController extends LeDocBaseController
 
             $user = UserEntity::loadUser($username);
             ArkHelper::quickNotEmptyAssert("User does not exist", $user);
-            ArkHelper::quickNotEmptyAssert("Password Error", (!password_verify($password, $user->passwordHash)));
+            ArkHelper::quickNotEmptyAssert("Password Error", (password_verify($password, $user->passwordHash)));
             ArkHelper::quickNotEmptyAssert("User is no longer active", ($user->status === UserEntity::USER_STATUS_NORMAL));
 
             $token = uniqid(date('YmdHis_'));
@@ -36,7 +36,12 @@ class SecurityController extends LeDocBaseController
             $done = SessionEntity::createSession($user->username, $token, $expire);
             ArkHelper::quickNotEmptyAssert("Cannot create session", $done);
 
-            $this->_sayOK(["token" => $token, "expire" => $expire]);
+            $this->_sayOK([
+                "username" => $user->username,
+                "realname" => $user->realname,
+                "token" => $token,
+                "expire" => $expire
+            ]);
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());
         }
@@ -47,6 +52,20 @@ class SecurityController extends LeDocBaseController
         try {
             $done = $this->session->suicide();
             $this->_sayOK(['done' => $done]);
+        } catch (\Exception $exception) {
+            $this->_sayFail($exception->getMessage());
+        }
+    }
+
+    public function userInfo()
+    {
+        try {
+            $this->_sayOK([
+                "username" => $this->user->username,
+                "realname" => $this->user->realname,
+                "privileges" => $this->user->privileges,
+                "permitted_folder" => [],//TODO for folder mapping
+            ]);
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());
         }

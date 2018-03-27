@@ -14,13 +14,17 @@ use sinri\ledoc\core\LeDocDataAgent;
 
 /**
  * @property string username
+ * @property string realname
  * @property string passwordHash
  * @property string status
+ * @property string privileges
  */
 class UserEntity extends LeDocBaseEntity
 {
     const USER_STATUS_NORMAL = "NORMAL";
     const USER_STATUS_DISABLED = "DISABLED";
+
+    const USER_PRIVILEGES_ADMIN = "PRIVILEGE_ADMIN";
 
     /**
      * @return string
@@ -37,8 +41,10 @@ class UserEntity extends LeDocBaseEntity
     {
         return [
             "username",
+            "realname",
             "passwordHash",
             "status",
+            "privileges",
         ];
     }
 
@@ -53,6 +59,11 @@ class UserEntity extends LeDocBaseEntity
         if ($raw === false) return false;
         $userEntity->loadPropertiesFromJson(json_decode($raw, true));
         return $userEntity;
+    }
+
+    public function setRealPassword(string $realPassword)
+    {
+        $this->passwordHash = password_hash($realPassword, PASSWORD_DEFAULT);
     }
 
     public function saveUser()

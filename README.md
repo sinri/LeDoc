@@ -1,4 +1,7 @@
 # LeDoc
+
+> LeDoc is short for Le Document.
+
 The document system for organization
 
 -----

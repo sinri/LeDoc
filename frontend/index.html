@@ -2,11 +2,42 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Le Document</title>
+    <title>Login - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.min.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 </head>
 <body>
 <div id="app">
-    <h1>Le Document</h1>
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <ledoc-top-bar></ledoc-top-bar>
+        </Header>
+        <Content>
+            <p>
+                此处为用户的dashboard
+            </p>
+        </Content>
+    </Layout>
 </div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            username: '',
+            password: ''
+        },
+        methods: {},
+        mounted: function () {
+
+        }
+    })
+</script>
 </body>
 </html>

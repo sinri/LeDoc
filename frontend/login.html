@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.min.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <h1 style="color:#e4e5e7;margin: 20px auto;">Le Document</h1>
+        </Header>
+        <Content>
+            <div style="width: 250px;margin: 100px auto;">
+                <i-form style="text-align: center">
+                    <form-item>
+                        <h2>用户认证</h2>
+                    </form-item>
+                    <form-item>
+                        <p>提供用户名和密码以登录</p>
+                    </form-item>
+                    <form-item>
+                        <i-input type="text" v-model="username" clearable placeholder="用户名">
+                            <Icon type="person" slot="prepend"></Icon>
+                        </i-input>
+                    </form-item>
+                    <form-item>
+                        <i-input type="password" v-model="password" clearable placeholder="密码">
+                            <Icon type="locked" slot="prepend"></Icon>
+                        </i-input>
+                    </form-item>
+                    <form-item>
+                        <i-button type="text" @click="onForgetPassword">忘记密码？</i-button>
+                        &nbsp;&nbsp;
+                        <i-button type="primary" @click="onLogin">登录</i-button>
+                    </form-item>
+                </i-form>
+            </div>
+        </Content>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            username: '',
+            password: ''
+        },
+        methods: {
+            onForgetPassword: function () {
+                alert("先联系管理员帮你刷下库吧");
+            },
+            onLogin: function () {
+                LeDoc.api.call(
+                    "SecurityController/login",
+                    {username: this.username, password: this.password},
+                    (data) => {
+                        LeDoc.security.setToken(data.token, data.expire, data.username, data.realname);
+                        window.location.href = "index.html";
+                    },
+                    (error, code) => {
+                        this.$Message.error({
+                            content: '登录失败。' + error,
+                            duration: 0,
+                            closable: true
+                        })
+                    }
+                )
+            }
+        }
+    })
+</script>
+</body>
+</html>
