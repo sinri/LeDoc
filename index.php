@@ -8,6 +8,8 @@
 
 require_once __DIR__ . '/autoload.php';
 
+date_default_timezone_set("Asia/Shanghai");
+
 /**
  * @param string $directory __DIR__ . '/../controller'
  * @param string $urlBase "XX/"

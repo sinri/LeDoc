@@ -10,6 +10,8 @@ namespace sinri\ledoc\core;
 
 
 use sinri\ark\web\ArkRequestFilter;
+use sinri\ledoc\entity\SessionEntity;
+use sinri\ledoc\entity\UserEntity;
 
 class LeDocFilter extends ArkRequestFilter
 {
@@ -34,7 +36,23 @@ class LeDocFilter extends ArkRequestFilter
         ];
         if (self::hasPrefixAmong($path, $publicApiList)) return true;
 
-        // TODO Session & Privilege Controller
+        // Session & Privilege Controller
+        $token = Ark()->webInput()->readRequest("token");
+        $session = SessionEntity::verifyToken($token);
+        if (!$session) {
+            $responseCode = 403;
+            $error = "Token Invalid";
+            return false;
+        }
+        $user = UserEntity::loadUser($session->username);
+        if (!$user || $user->status !== UserEntity::USER_STATUS_NORMAL) {
+            $responseCode = 403;
+            $error = "User Invalid";
+            return false;
+        }
+
+        $preparedData['session'] = $session;
+        $preparedData['user'] = $user;
 
         return true;
     }
