@@ -11,7 +11,7 @@
   ],
   "minimum-stability": "stable",
   "require": {
-    "sinri/ark": "^1.0",
+    "sinri/ark": "^1.2",
     "cebe/markdown": "^1.1"
   }
 }

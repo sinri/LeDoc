@@ -29,6 +29,8 @@ class LeDocBaseController extends ArkWebController
     {
         parent::__construct();
 
+        LeDoc::logger()->debug("controller got filterGeneratedData", ['as' => $this->filterGeneratedData]);
+
         $this->session = ArkHelper::readTarget($this->filterGeneratedData, 'session', new SessionEntity());
         $this->user = ArkHelper::readTarget($this->filterGeneratedData, 'user', new UserEntity());
     }

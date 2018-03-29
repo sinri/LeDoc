@@ -72,7 +72,7 @@ class SessionEntity extends LeDocBaseEntity
         $sessionEntity->token = $token;
         $sessionEntity->username = $username;
         $sessionEntity->expire = $expire;
-        return LeDocDataAgent::writeRecordRawContent($sessionEntity->getEntityDataType(), $sessionEntity->token, json_encode($sessionEntity->encodePropertiesForJson()));
+        return LeDocDataAgent::writeRecordRawContent(json_encode($sessionEntity->encodePropertiesForJson()), $sessionEntity->getEntityDataType(), $sessionEntity->token);
     }
 
     public function suicide()

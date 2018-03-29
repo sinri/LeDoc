@@ -57,14 +57,15 @@ class SecurityController extends LeDocBaseController
         }
     }
 
-    public function userInfo()
+    public function currentUserInfo()
     {
         try {
             $this->_sayOK([
                 "username" => $this->user->username,
                 "realname" => $this->user->realname,
                 "privileges" => $this->user->privileges,
-                "permitted_folder" => [],//TODO for folder mapping
+                "folders" => $this->user->getUserRelatedFolders(),
+                "status" => $this->user->status,
             ]);
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());

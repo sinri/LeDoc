@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Users - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <ledoc-top-bar></ledoc-top-bar>
+        </Header>
+        <Content>
+            <Row>
+                <i-col span="22" offset="1">
+                    <h1>用户列表</h1>
+                </i-col>
+            </Row>
+            <Row>
+                <i-col span="22" offset="1">
+                    <table class="ledoc_table">
+                        <tr>
+                            <th>用户名</th>
+                            <th>显示名</th>
+                            <th>关联的顶级文件夹</th>
+                            <th>权限</th>
+                            <th>状态</th>
+                            <th>操作</th>
+                        </tr>
+                        <tr v-for="user in users">
+                            <td>{{user.username}}</td>
+                            <td>{{user.realname}}</td>
+                            <td>
+                                <Tag v-for="folder in user.foldersToDisplay">{{folder}}</Tag>
+                            </td>
+                            <td>
+                                <Tag v-for="privilege in user.privileges">{{privilege}}</Tag>
+                            </td>
+                            <td>{{user.status}}</td>
+                            <td>
+                                <i-button type="text" @click="openUserDetailPage(user.username)" size="small">查看详情
+                                </i-button>
+                            </td>
+                        </tr>
+                    </table>
+                </i-col>
+            </Row>
+        </Content>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            users: [],
+        },
+        methods: {
+            loadUsers: function () {
+                LeDoc.api.call(
+                    "UserController/userList",
+                    {},
+                    (data) => {
+                        let users = data.users;
+                        for (let i = 0; i < users.length; i++) {
+                            let foldersToDisplay = [];
+                            for (let j = 0; j < users[i].folders.length; j++) {
+                                let folder = users[i].folders[j];
+                                foldersToDisplay.push(folder.join('/'));
+                            }
+                            users[i].foldersToDisplay = foldersToDisplay;
+                        }
+                        this.users = users;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载用户列表失败 " + error);
+                    }
+                );
+            },
+            openUserDetailPage: function (username) {
+                window.location.href = "user.html?username=" + encodeURIComponent(username);
+            }
+        },
+        mounted: function () {
+            LeDoc.security.thisPageRequestPrivilege(
+                LeDoc.security.privilegeOfAdmin,
+                () => {
+                    this.loadUsers();
+                },
+                (privilege) => {
+                    alert("没有权限：" + privilege);
+                    window.location.replace("index.html");
+                }
+            );
+        }
+    });
+</script>
+</body>
+</html>

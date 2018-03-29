@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>User - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <ledoc-top-bar></ledoc-top-bar>
+        </Header>
+        <Content>
+            <template v-if="user===null">
+                <p>正在加载数据</p>
+            </template>
+            <template v-else>
+                <Row>
+                    <i-col span="24" style="text-align: center">
+                        <h1>更新用户信息</h1>
+                    </i-col>
+                    <i-col span="12" offset="6">
+                        <i-form :label-width="100">
+                            <form-item label="用户名">
+                                {{user.username}}
+                            </form-item>
+                            <form-item label="显示名">
+                                <i-input type="text" v-model="draft.realname"></i-input>
+                            </form-item>
+                            <form-item label="密码">
+                                <i-input type="password" v-model="draft.password" placeholder="置空此处则不修改密码"></i-input>
+                            </form-item>
+                            <template v-if="iAmAdmin">
+                                <form-item label="状态">
+                                    <i-select v-model="draft.status">
+                                        <i-option v-for="status in status_list" :value="status">{{status}}</i-option>
+                                    </i-select>
+                                </form-item>
+                                <form-item label="权限">
+                                    <i-select v-model="draft.privileges" multiple>
+                                        <i-option v-for="privilege in privilege_list" :value="privilege">{{privilege}}
+                                        </i-option>
+                                    </i-select>
+                                </form-item>
+                                <!--<form-item label="关联目录">-->
+                                <!--<Tag v-for="(folder,index) in draft.folders" :key="index" :name="index" closable @on-close="removeFolder">{{folder.join('/')}}</Tag>-->
+                                <!--<p>-->
+                                <!--此处只能解除关联，如需添加目录关联，需要到相应目录下添加。-->
+                                <!--</p>-->
+                                <!--</form-item>-->
+                            </template>
+                            <form-item label="">
+                                <i-button type="primary" @click="updateUserInfo">更新</i-button>
+                            </form-item>
+                        </i-form>
+
+
+                    </i-col>
+                </Row>
+            </template>
+        </Content>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            iAmAdmin: false,
+            status_list: ['NORMAL', 'DISABLED'],
+            privilege_list: [LeDoc.security.privilegeOfAdmin],
+            username: [],
+            user: null,
+            draft: null,
+        },
+        methods: {
+            loadUserInfo: function () {
+                LeDoc.api.call(
+                    "UserController/getUserInfo",
+                    {
+                        username: this.username
+                    },
+                    (data) => {
+                        let user = data.user;
+                        // let foldersToDisplay=[];
+                        // for(let j=0;j<user.folders.length;j++){
+                        //     let folder=user.folders[j];
+                        //     foldersToDisplay.push(folder.join('/'));
+                        // }
+                        // user.foldersToDisplay=foldersToDisplay;
+                        this.user = user;
+
+                        let draft = LeDoc.data.copy(user);
+                        draft.password = "";
+                        this.draft = draft;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "无法加载用户信息。" + error);
+                    }
+                )
+            },
+            removeFolder: function (event, name) {
+                // console.log("remove folder",arguments);
+                this.draft.folders.splice(name, 1);
+            },
+            updateUserInfo: function () {
+                let data = {username: this.user.username};
+                if (this.user.realname !== this.draft.realname) {
+                    data.realname = this.draft.realname;
+                }
+                if (this.user.password !== '') {
+                    data.password = this.draft.password;
+                }
+                if (this.user.status !== this.draft.status) {
+                    data.status = this.draft.status;
+                }
+                if (JSON.stringify(this.user.privileges) !== JSON.stringify(this.draft.privileges)) {
+                    data.privileges = draft.privileges;
+                }
+
+                LeDoc.api.call(
+                    "UserController/updateUserInfo",
+                    data,
+                    (data) => {
+                        if (this.user.username === LeDoc.security.getUsername()) {
+                            if (this.user.realname !== this.draft.realname) {
+                                if (confirm("你的用户名被修改了，重新登录后才能生效。要现在就重新登录吗？")) {
+                                    LeDoc.security.logout();
+                                }
+                            }
+                        }
+                        this.loadUserInfo();
+
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "更新用户失败。" + error);
+                    }
+                )
+            }
+        },
+        mounted: function () {
+            this.username = LeDoc.page.getParameterByName("username", LeDoc.security.getUsername());
+            LeDoc.security.thisPageRequestPrivilege(
+                LeDoc.security.privilegeOfAdmin,
+                () => {
+                    this.iAmAdmin = true;
+                    this.loadUserInfo();
+                },
+                (privilege) => {
+                    if (this.username !== LeDoc.security.getUsername()) {
+                        window.location.replace("index.html");
+                    } else {
+                        // self center to change name/pw
+                        this.loadUserInfo();
+                    }
+                }
+            );
+            // load
+            this.loadUserInfo();
+        }
+    });
+</script>
+</body>
+</html>

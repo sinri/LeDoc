@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="PhpIncludePathManager">
+    <include_path>
+      <path value="$PROJECT_DIR$/vendor/sinri/smallphpmailer" />
+      <path value="$PROJECT_DIR$/vendor/sinri/ark" />
+      <path value="$PROJECT_DIR$/vendor/ralouphie/getallheaders" />
+      <path value="$PROJECT_DIR$/vendor/composer" />
+      <path value="$PROJECT_DIR$/vendor/psr/log" />
+      <path value="$PROJECT_DIR$/vendor/cebe/markdown" />
+    </include_path>
+  </component>
   <component name="PhpProjectSharedConfiguration" php_language_level="7" />
 </project>

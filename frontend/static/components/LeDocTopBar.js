@@ -35,7 +35,7 @@ Vue.component('ledoc-top-bar', {
                     window.location.href = "dir.html";
                     break;
                 case 'user':
-                    window.location.href = "user.html";
+                    window.location.href = "users.html";
                     break;
                 default:
                 //do nothing

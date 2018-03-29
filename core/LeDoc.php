@@ -9,7 +9,9 @@
 namespace sinri\ledoc\core;
 
 
+use Psr\Log\LogLevel;
 use sinri\ark\core\ArkHelper;
+use sinri\ark\core\ArkLogger;
 
 class LeDoc
 {
@@ -33,5 +35,19 @@ class LeDoc
     {
         $x = self::readConfig(["session", "lifetime"], 3600 * 24 * 7);
         return max(intval($x, 10), 60);
+    }
+
+    protected static $logger;
+
+    /**
+     * @return ArkLogger
+     */
+    public static function logger()
+    {
+        if (!self::$logger) {
+            self::$logger = new ArkLogger(__DIR__ . '/../runtime/log', 'LeDoc');
+            self::$logger->setIgnoreLevel(LogLevel::DEBUG);//for debug
+        }
+        return self::$logger;
     }
 }

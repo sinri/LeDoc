@@ -75,4 +75,15 @@ abstract class LeDocBaseEntity
         }
     }
 
+    /**
+     * @param string $propertyName
+     * @param $item
+     */
+    public function appendItemToArrayProperty(string $propertyName, $item)
+    {
+        if (!isset($this->properties[$propertyName]) || !is_array($this->properties[$propertyName])) {
+            $this->properties[$propertyName] = [];
+        }
+        $this->properties[$propertyName][] = $item;
+    }
 }

@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "content-hash": "eafe6a95ed1f9c5d85d0a49848e80cfd",
+    "content-hash": "d1ad735cc885b9ceecf3b423fdbd9bed",
     "packages": [
         {
             "name": "cebe/markdown",
@@ -155,16 +155,16 @@
         },
         {
             "name": "sinri/ark",
-            "version": "1.0",
+            "version": "1.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sinri/Ark.git",
-                "reference": "1eb09b90fe81db06194090b821500b1c067c5ad6"
+                "reference": "926632d2ba855de41f1213ca81816949b43c285a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://files.phpcomposer.com/files/sinri/Ark/1eb09b90fe81db06194090b821500b1c067c5ad6.zip",
-                "reference": "1eb09b90fe81db06194090b821500b1c067c5ad6",
+                "url": "https://files.phpcomposer.com/files/sinri/Ark/926632d2ba855de41f1213ca81816949b43c285a.zip",
+                "reference": "926632d2ba855de41f1213ca81816949b43c285a",
                 "shasum": ""
             },
             "require": {
@@ -193,7 +193,7 @@
                 }
             ],
             "description": "A fundamental toolkit for PHP.",
-            "time": "2018-03-26T15:10:58+00:00"
+            "time": "2018-03-28T05:53:26+00:00"
         },
         {
             "name": "sinri/smallphpmailer",
