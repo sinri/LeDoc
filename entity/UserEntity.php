@@ -125,18 +125,18 @@ class UserEntity extends LeDocBaseEntity
     }
 
     /**
-     * @param $originPath
+     * @param string[] $originPath
      * @param string|null $newName
      */
-    public function spliceRelatedTopFolderPath($originPath, $newName)
+    public function spliceRelatedTopFolderPath($originPath, $newName = null)
     {
         $f = $this->folders;
         for ($i = 0; $i < count($f); $i++) {
             if (json_encode($f[$i]) === json_encode($originPath)) {
                 if ($newName === null) {
-                    unset($f[$i]);
+                    unset($f[$i]); // 一气之下把整个folder删了
                 } else {
-                    $f[$i][count($f[$i]) - 1] = $newName;
+                    $f[$i][count($f[$i]) - 1] = $newName; // 改个末端名字
                 }
                 break;
             }
@@ -151,5 +151,28 @@ class UserEntity extends LeDocBaseEntity
     {
         $users = LeDocDataAgent::getRecordOriginalNamesWithGlob(self::DATA_TYPE_USER, '*');
         return $users;
+    }
+
+    public function whenNewPermissionCreated($pathComponents)
+    {
+        $folders = $this->getUserRelatedFolders();
+        $newFolderHash = LeDocDataAgent::getRecordFilePath($this->getEntityDataType(), "", $pathComponents);
+        $toBeReplaced = [];
+        foreach ($folders as $key => $folder) {
+            $folderHash = LeDocDataAgent::getRecordFilePath($this->getEntityDataType(), "", $folder);
+            if (strpos($folderHash, $newFolderHash) === 0) {
+                // 新的授权是在原有审批路径之下的，不需要新增顶级目录关联
+                return;
+            }
+            if (strpos($newFolderHash, $folderHash) === 0) {
+                // 新的授权包含了原有审批路径，需要炸掉原有的用新的替换
+                $toBeReplaced[] = $key;
+            }
+        }
+        foreach ($toBeReplaced as $key) {
+            unset($folders[$key]);
+        }
+        $folders[] = $pathComponents;
+        $this->folders = $folders;
     }
 }

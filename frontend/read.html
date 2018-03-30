@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <script type="text/javascript" src="static/sdk/marked.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/sdk/github-markdown.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <ledoc-top-bar></ledoc-top-bar>
+        </Header>
+        <Content>
+            <Row style="margin: 10px;padding-bottom:10px;border-bottom: 1px solid #495060;">
+                <i-col span="24" style="background-color: #e9eaec;padding: 10px;">
+                    <Breadcrumb>
+                        <breadcrumb-item v-for="item in folder">{{item}}</breadcrumb-item>
+                        <breadcrumb-item>{{ doc_hash }}: {{doc.title}}</breadcrumb-item>
+                    </Breadcrumb>
+                </i-col>
+            </Row>
+            <Row style="margin: 10px;padding-bottom: 10px;border-bottom: 1px solid #495060;min-height: 300px">
+                <i-col span="24">
+                    <div class="markdown-body" v-html="preview"></div>
+                </i-col>
+            </Row>
+            <Row style="margin: 10px;padding-bottom: 10px;border-bottom: 1px solid #495060;">
+                <i-col span="24" v-if="false">
+                    由
+                    <Tag v-for="username in doc.authors">
+                        {{doc.author_dict[username].realname}}({{username}})
+                    </Tag>
+                    编写。
+                </i-col>
+                <i-col span="24">
+                    <p>历史记录</p>
+                    <p v-for="item in doc.history">
+                        {{item.date}}
+                        {{doc.author_dict[item.act_user].realname}}({{item.act_user}}):
+                        {{item.action}}
+                        <span style="font-style: italic">{{item.remark}}</span>
+                    </p>
+                </i-col>
+            </Row>
+            <Row style="margin: 10px">
+                <i-col span="24">
+                    <i-button v-if="can_edit" type="default" icon="edit" @click="editDocument">编辑</i-button>
+                    &nbsp;
+                    <i-button v-if="can_edit" type="error" icon="trash" @click="removeDocument">删除</i-button>
+                </i-col>
+            </Row>
+        </Content>
+        <Footer>
+            <ledoc-buttom-bar></ledoc-buttom-bar>
+        </Footer>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            folder: null,
+            doc_hash: null,
+            doc: {},
+            preview: '',
+            can_edit: false,
+        },
+        methods: {
+            loadDocumentToRead: function () {
+                LeDoc.api.call(
+                    "DocumentController/loadDocument",
+                    {
+                        folder: this.folder,
+                        doc_hash: this.doc_hash
+                    },
+                    (data) => {
+                        this.doc = data.doc;
+                        this.can_edit = data.can_edit;
+                        this.preview = marked(data.doc.content, {sanitize: true});
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载失败。" + error);
+                    }
+                )
+            },
+            editDocument: function () {
+                window.location.href = 'edit.html?folder_hash=' + encodeURIComponent(JSON.stringify(this.folder)) + "&doc_hash=" + encodeURIComponent(this.doc_hash);
+            },
+            removeDocument: function () {
+                LeDoc.api.call(
+                    "DocumentController/removeDocument",
+                    {
+                        folder: this.folder,
+                        doc_hash: this.doc_hash,
+                    },
+                    (data) => {
+                        window.location.href = "index.html";
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, error);
+                    }
+                )
+            }
+        },
+        mounted: function () {
+            let folder_hash = LeDoc.page.getParameterByName("folder_hash", null);
+            if (folder_hash === null) {
+                alert("竟然不给出目录");
+                window.location.href = "index.html";
+                return;
+            }
+            this.folder = JSON.parse(folder_hash);
+
+            this.doc_hash = LeDoc.page.getParameterByName("doc_hash", null);
+            if (this.doc_hash === null) {
+                alert("竟然不给出文档");
+                window.location.href = "index.html";
+                return;
+            }
+
+            this.loadDocumentToRead()
+        }
+    });
+</script>
+</body>
+</html>

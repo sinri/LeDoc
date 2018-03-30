@@ -18,18 +18,27 @@ class UserController extends LeDocBaseController
     public function userList()
     {
         try {
+            $needDetails = $this->_readRequest("need_details", 'YES');
+            $normalUserOnly = $this->_readRequest("normal_user_only", 'NO');
+
             $users = [];
 
             $userNames = UserEntity::getUserNameList();
             foreach ($userNames as $userName) {
                 $user = UserEntity::loadUser($userName);
-                $users[] = [
+                if ($normalUserOnly === 'YES' && $user->status !== UserEntity::USER_STATUS_NORMAL) {
+                    continue;
+                }
+                $users_item = [
                     "username" => $user->username,
                     "realname" => $user->realname,
-                    "folders" => $user->getUserRelatedFolders(),
-                    'status' => $user->status,
-                    'privileges' => $user->privileges,
                 ];
+                if ($needDetails === 'YES') {
+                    $users_item['folders'] = $user->getUserRelatedFolders();
+                    $users_item['status'] = $user->status;
+                    $users_item['privileges'] = $user->privileges;
+                }
+                $users[] = $users_item;
             }
 
             $this->_sayOK(['users' => $users]);
@@ -63,7 +72,7 @@ class UserController extends LeDocBaseController
     public function updateUserInfo()
     {
         try {
-            $username = $this->_readRequest("username");
+            $username = $this->_readRequest("username", null, '/^[A-Za-z0-9]+$/');
             ArkHelper::quickNotEmptyAssert("username should not be empty", $username);
             $user = UserEntity::loadUser($username);
             ArkHelper::quickNotEmptyAssert("user not here", $user);
@@ -95,6 +104,36 @@ class UserController extends LeDocBaseController
             }
             $done = $user->saveUser();
             ArkHelper::quickNotEmptyAssert("cannot change user", $done);
+            $this->_sayOK();
+        } catch (\Exception $exception) {
+            $this->_sayFail($exception->getMessage());
+        }
+    }
+
+    public function createUser()
+    {
+        try {
+            $username = $this->_readRequest("username", null, '/^[A-Za-z0-9]+$/');
+            $password = $this->_readRequest('password');
+            $status = $this->_readRequest('status');
+            $realname = $this->_readRequest('realname');
+            $privileges = $this->_readRequest('privileges');
+
+            ArkHelper::quickNotEmptyAssert("field should not be empty", $username, $password, $realname);
+            ArkHelper::quickNotEmptyAssert("status error", in_array($status, [UserEntity::USER_STATUS_NORMAL, UserEntity::USER_STATUS_DISABLED]));
+            ArkHelper::quickNotEmptyAssert("privileges should be array", is_array($privileges));
+            $user = UserEntity::loadUser($username);
+            ArkHelper::quickNotEmptyAssert("user has been here", $user === false);
+
+            $user = new UserEntity();
+            $user->username = $username;
+            $user->realname = $realname;
+            $user->status = $status;
+            $user->privileges = $privileges;
+            $user->setRealPassword($password);
+            $done = $user->saveUser();
+            ArkHelper::quickNotEmptyAssert("cannot save user", $done);
+
             $this->_sayOK();
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());

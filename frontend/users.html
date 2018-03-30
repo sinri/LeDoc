@@ -10,6 +10,7 @@
     <script type="text/javascript" src="static/sdk/axios.min.js"></script>
     <script type="text/javascript" src="static/LeDoc.js"></script>
     <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
     <link rel="stylesheet" type="text/css" href="static/universal.css">
     <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 </head>
@@ -20,9 +21,12 @@
             <ledoc-top-bar></ledoc-top-bar>
         </Header>
         <Content>
-            <Row>
-                <i-col span="22" offset="1">
-                    <h1>用户列表</h1>
+            <Row style="margin-top: 10px;">
+                <i-col span="11" offset="1">
+                    <h1 style="line-height: 32px;">用户列表</h1>
+                </i-col>
+                <i-col span="11" style="text-align: right">
+                    <i-button type="default" icon="plus" @click="toCreateUser">新建用户</i-button>
                 </i-col>
             </Row>
             <Row>
@@ -56,6 +60,9 @@
             </Row>
         </Content>
     </Layout>
+    <Footer>
+        <ledoc-buttom-bar></ledoc-buttom-bar>
+    </Footer>
 </div>
 <script>
     new Vue({
@@ -87,6 +94,9 @@
             },
             openUserDetailPage: function (username) {
                 window.location.href = "user.html?username=" + encodeURIComponent(username);
+            },
+            toCreateUser: function () {
+                window.location.href = "user.html";
             }
         },
         mounted: function () {

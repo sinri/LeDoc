@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <ledoc-top-bar></ledoc-top-bar>
+        </Header>
+        <Content>
+            <Row style="margin: 10px">
+                <i-col span="24" style="background-color: #e9eaec;padding: 10px;">
+                    <Breadcrumb>
+                        <breadcrumb-item v-for="item in folder">{{item}}</breadcrumb-item>
+                        <breadcrumb-item v-if="doc_hash===null">新建文档: {{draft.title}}</breadcrumb-item>
+                        <breadcrumb-item v-else>{{doc_hash}}: {{draft.title}}</breadcrumb-item>
+                    </Breadcrumb>
+                </i-col>
+                <template v-if="doc_hash===null">
+                    <i-col span="24" style="margin-top: 10px">
+                        <i-form>
+                            <form-item>
+                                <i-input type="text" v-model="draft.title" placeholder="标题"></i-input>
+                            </form-item>
+                            <form-item>
+                                <i-input type="textarea" v-model="draft.content" :autosize="{ minRows: 10 }"
+                                         placeholder="Markdown"></i-input>
+                            </form-item>
+                            <form-item style="text-align: right">
+                                <i-button type="primary" icon="android-send" @click="createDocument">创建</i-button>
+                            </form-item>
+                        </i-form>
+                    </i-col>
+                </template>
+                <template v-else>
+                    <!--<i-col span="24" style="margin-top: 10px">{{draft}}</i-col>-->
+                    <i-col span="24" style="margin-top: 10px">
+                        <i-form>
+                            <form-item>
+                                <i-input type="text" v-model="draft.title" placeholder="标题"></i-input>
+                            </form-item>
+                            <form-item>
+                                <i-input type="textarea" v-model="draft.content" :autosize="{ minRows: 10 }"
+                                         placeholder="Markdown"></i-input>
+                            </form-item>
+                            <form-item style="text-align: right">
+                                <i-button type="primary" icon="android-send" @click="updateDocument">保存</i-button>
+                            </form-item>
+                        </i-form>
+                    </i-col>
+                </template>
+            </Row>
+        </Content>
+        <Footer>
+            <ledoc-buttom-bar></ledoc-buttom-bar>
+        </Footer>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            folder: null,
+            doc_hash: null,
+            draft: {
+                title: '',
+                content: '',
+                type: 'markdown',
+            }
+        },
+        methods: {
+            loadDocumentToEdit: function () {
+                LeDoc.api.call(
+                    "DocumentController/loadDocument",
+                    {
+                        folder: this.folder,
+                        doc_hash: this.doc_hash
+                    },
+                    (data) => {
+                        if (!data.can_edit) {
+                            alert("你好像没有权限呢");
+                            window.location.href = "index.html";
+                            return;
+                        }
+                        this.draft = data.doc;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载失败。" + error);
+                    }
+                )
+            },
+            createDocument: function () {
+                LeDoc.api.call(
+                    "DocumentController/createDocument",
+                    {
+                        folder: this.folder,
+                        title: this.draft.title,
+                        content: this.draft.content,
+                        type: this.draft.type,
+                    },
+                    (data) => {
+                        let doc_hash = data.doc_hash;
+                        window.location.href = 'read.html?folder_hash=' + encodeURIComponent(JSON.stringify(this.folder)) + "&doc_hash=" + encodeURIComponent(doc_hash);
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "创建失败。" + error);
+                    }
+                )
+            },
+            updateDocument: function () {
+                LeDoc.api.call(
+                    "DocumentController/updateDocument",
+                    {
+                        folder: this.folder,
+                        doc_hash: this.doc_hash,
+                        title: this.draft.title,
+                        content: this.draft.content,
+                    },
+                    (data) => {
+                        window.location.href = 'read.html?folder_hash=' + encodeURIComponent(JSON.stringify(this.folder)) + "&doc_hash=" + encodeURIComponent(this.doc_hash);
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "更新失败。" + error);
+                    }
+                )
+            }
+        },
+        mounted: function () {
+            let folder_hash = LeDoc.page.getParameterByName("folder_hash", null);
+            if (folder_hash === null) {
+                alert("竟然不给出目录");
+                window.location.href = "index.html";
+                return;
+            }
+            this.folder = JSON.parse(folder_hash);
+
+            this.doc_hash = LeDoc.page.getParameterByName("doc_hash", null);
+            if (this.doc_hash !== null) {
+                this.loadDocumentToEdit();
+            }
+
+        }
+    });
+</script>
+</body>
+</html>

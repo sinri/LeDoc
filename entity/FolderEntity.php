@@ -120,6 +120,21 @@ class FolderEntity extends LeDocBaseEntity
         return LeDocDataAgent::removeFolder($this->getEntityDataType(), $this->pathComponents);
     }
 
+    public function canUserRead(string $username)
+    {
+        return $this->isUserRelated($username);
+    }
+
+    public function canUserEdit(string $username)
+    {
+        return $this->isUserEditor($username) || $this->isUserManager($username);
+    }
+
+    public function canUserManage(string $username)
+    {
+        return $this->isUserManager($username);
+    }
+
     /**
      * @param string $username
      * @return bool
@@ -145,14 +160,14 @@ class FolderEntity extends LeDocBaseEntity
      * @param string $username
      * @return bool
      */
-    public function canUserManage(string $username)
+    public function isUserManager(string $username)
     {
         if (in_array($username, $this->managers)) return true;
         if (count($this->pathComponents) > 1) {
             $p = json_decode(json_encode($this->pathComponents), true);
             array_splice($p, -1, 1);
             $parentFolder = FolderEntity::loadFolderByPathComponents($p);
-            return $parentFolder->canUserManage($username);
+            return $parentFolder->isUserManager($username);
         } else {
             return false;
         }
@@ -162,14 +177,14 @@ class FolderEntity extends LeDocBaseEntity
      * @param string $username
      * @return bool
      */
-    public function canUserEdit(string $username)
+    public function isUserEditor(string $username)
     {
         if (in_array($username, $this->editors)) return true;
         if (count($this->pathComponents) > 1) {
             $p = json_decode(json_encode($this->pathComponents), true);
             array_splice($p, -1, 1);
             $parentFolder = FolderEntity::loadFolderByPathComponents($p);
-            return $parentFolder->canUserEdit($username);
+            return $parentFolder->isUserEditor($username);
         } else {
             return false;
         }
@@ -179,14 +194,14 @@ class FolderEntity extends LeDocBaseEntity
      * @param string $username
      * @return bool
      */
-    public function canUserRead(string $username)
+    public function isUserReader(string $username)
     {
         if (in_array($username, $this->readers)) return true;
         if (count($this->pathComponents) > 1) {
             $p = json_decode(json_encode($this->pathComponents), true);
             array_splice($p, -1, 1);
             $parentFolder = FolderEntity::loadFolderByPathComponents($p);
-            return $parentFolder->canUserRead($username);
+            return $parentFolder->isUserReader($username);
         } else {
             return false;
         }
@@ -260,9 +275,117 @@ class FolderEntity extends LeDocBaseEntity
     /**
      * @return string[]
      */
-    public function getFileNames()
+    public function getDocHashList()
     {
-        //TODO
-        return [];
+        $fileNames = LeDocDataAgent::getRecordOriginalNamesWithGlob($this->getEntityDataType(), '*', $this->pathComponents);
+        if (empty($fileNames)) return [];
+        $list = [];
+        foreach ($fileNames as $fileName) {
+            if (strpos($fileName, ".", 0)) continue;
+            $path = LeDocDataAgent::getRecordFilePath($this->getEntityDataType(), $fileName, $this->pathComponents);
+            if (!file_exists($path) || !is_file($path)) continue;
+            $list[] = $fileName;
+        }
+        LeDoc::logger()->debug(__METHOD__ . '@' . __LINE__, ['list' => $list]);
+        return $list;
+    }
+
+    /**
+     * @return array
+     */
+    public function getRelatedUsers()
+    {
+        $pathPermissionList = [];
+        $currentFolderHash = json_encode($this->pathComponents);
+        $pathComponents = json_decode(json_encode($this->pathComponents), true);
+
+        $pathPermissionList[] = [
+            "path_components" => $pathComponents,
+            "hash" => json_encode($pathComponents),
+            "readers" => $this->readers,
+            "editors" => $this->editors,
+            "managers" => $this->managers,
+        ];
+
+        while (count($pathComponents) > 1) {
+            array_splice($pathComponents, -1, 1);
+            $folder = FolderEntity::loadFolderByPathComponents($pathComponents);
+            $pathPermissionList[] = [
+                "path_components" => $pathComponents,
+                "hash" => json_encode($pathComponents),
+                "readers" => $folder->readers,
+                "editors" => $folder->editors,
+                "managers" => $folder->managers,
+            ];
+        }
+
+        $userPermissionList = [];
+        foreach ($pathPermissionList as $pathPermission) {
+            foreach (['manager', 'reader', 'editor'] as $type) {
+                foreach ($pathPermission[$type . 's'] as $username) {
+                    $user = UserEntity::loadUser($username);
+                    if (!$user || $user->status !== UserEntity::USER_STATUS_NORMAL) continue;
+                    if (!isset($userPermissionList[$username])) $userPermissionList[$username] = [
+                        "username" => $username,
+                        "realname" => $user->realname,
+                        "permissions" => [],
+                    ];
+                    $hash = json_encode($pathPermission['path_components']);
+                    $userPermissionList[$username]['permissions'][] = [
+                        "type" => $type,
+                        "path_components" => $pathPermission['path_components'],
+                        "hash" => $hash,
+                        "is_direct_permission" => ($currentFolderHash === $hash),
+                    ];
+                }
+            }
+        }
+        $userPermissionList = array_values($userPermissionList);
+
+        return ["by_path" => $pathPermissionList, "by_user" => $userPermissionList];
+    }
+
+    /**
+     * @param string $type
+     * @param string $username
+     */
+    public function permitUser(string $type, string $username)
+    {
+        $x = $this->getRelatedUsers();
+        $x = $x['by_user'];
+        $canPermitOnThisFolder = false;
+        if (isset($x[$username])) {
+            $permissions = $x[$username]['permissions'];
+            for ($y = 0; $y < count($permissions); $y++) {
+                $permission = $permissions[$y];
+                if ($permission['is_direct_permission']) {
+                    $canPermitOnThisFolder = true;
+                    break;
+                }
+            }
+        } else {
+            $canPermitOnThisFolder = true;
+        }
+        if (!$canPermitOnThisFolder) return;
+        $this->removeItemInArrayProperty('managers', $username);
+        $this->removeItemInArrayProperty('editors', $username);
+        $this->removeItemInArrayProperty('readers', $username);
+
+        $this->appendItemToArrayProperty($type . 's', $username);
+    }
+
+    /**
+     * @param string $username
+     */
+    public function removePermissionOfUser(string $username)
+    {
+        $this->removeItemInArrayProperty('managers', $username);
+        $this->removeItemInArrayProperty('editors', $username);
+        $this->removeItemInArrayProperty('readers', $username);
+    }
+
+    public function saveMeta()
+    {
+        return LeDocDataAgent::writeFolderMeta(json_encode($this->encodePropertiesForJson()), $this->getEntityDataType(), $this->getPathComponents());
     }
 }

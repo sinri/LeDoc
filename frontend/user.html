@@ -10,6 +10,7 @@
     <script type="text/javascript" src="static/sdk/axios.min.js"></script>
     <script type="text/javascript" src="static/LeDoc.js"></script>
     <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
     <link rel="stylesheet" type="text/css" href="static/universal.css">
     <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
 </head>
@@ -20,24 +21,30 @@
             <ledoc-top-bar></ledoc-top-bar>
         </Header>
         <Content>
-            <template v-if="user===null">
+            <template v-if="draft===null">
                 <p>正在加载数据</p>
             </template>
             <template v-else>
                 <Row>
-                    <i-col span="24" style="text-align: center">
-                        <h1>更新用户信息</h1>
+                    <i-col span="24" style="text-align: center;margin: 10px auto;">
+                        <template v-if="username!==''"><h1>更新用户信息</h1></template>
+                        <template v-else><h1>新建用户</h1></template>
                     </i-col>
                     <i-col span="12" offset="6">
                         <i-form :label-width="100">
                             <form-item label="用户名">
-                                {{user.username}}
+                                <template v-if="username!==''">{{user.username}}</template>
+                                <template v-else>
+                                    <i-input type="text" v-model="draft.username"></i-input>
+                                    用户名只能使用[A-Za-z0-9]的组合。
+                                </template>
                             </form-item>
                             <form-item label="显示名">
                                 <i-input type="text" v-model="draft.realname"></i-input>
                             </form-item>
                             <form-item label="密码">
-                                <i-input type="password" v-model="draft.password" placeholder="置空此处则不修改密码"></i-input>
+                                <i-input type="password" v-model="draft.password"
+                                         placeholder="更新时置空此处则不修改密码，新建时必填"></i-input>
                             </form-item>
                             <template v-if="iAmAdmin">
                                 <form-item label="状态">
@@ -58,8 +65,13 @@
                                 <!--</p>-->
                                 <!--</form-item>-->
                             </template>
-                            <form-item label="">
-                                <i-button type="primary" @click="updateUserInfo">更新</i-button>
+                            <form-item label="" style="text-align: right">
+                                <template v-if="username!==''">
+                                    <i-button type="primary" @click="updateUserInfo">更新</i-button>
+                                </template>
+                                <template v-else>
+                                    <i-button type="primary" @click="createUser">创建</i-button>
+                                </template>
                             </form-item>
                         </i-form>
 
@@ -68,6 +80,9 @@
                 </Row>
             </template>
         </Content>
+        <Footer>
+            <ledoc-buttom-bar></ledoc-buttom-bar>
+        </Footer>
     </Layout>
 </div>
 <script>
@@ -77,9 +92,15 @@
             iAmAdmin: false,
             status_list: ['NORMAL', 'DISABLED'],
             privilege_list: [LeDoc.security.privilegeOfAdmin],
-            username: [],
+            username: "",
             user: null,
-            draft: null,
+            draft: {
+                username: '',
+                realname: '',
+                password: '',
+                status: 'NORMAL',
+                privileges: [],
+            },
         },
         methods: {
             loadUserInfo: function () {
@@ -103,7 +124,9 @@
                         this.draft = draft;
                     },
                     (error, code) => {
-                        LeDoc.ui.showTopAlert(this, "无法加载用户信息。" + error);
+                        //LeDoc.ui.showTopAlert(this, "无法加载用户信息。" + error);
+                        alert("无法加载用户信息。" + error);
+                        window.location.replace("index.html");
                     }
                 )
             },
@@ -138,33 +161,44 @@
                             }
                         }
                         this.loadUserInfo();
-
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, "更新用户失败。" + error);
                     }
                 )
+            },
+            createUser: function () {
+                let params = this.draft;
+                LeDoc.api.call(
+                    "UserController/createUser",
+                    params,
+                    (data) => {
+                        this.username = params.username;
+                        this.loadUserInfo();
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "操作失败。" + error);
+                    }
+                )
             }
         },
         mounted: function () {
-            this.username = LeDoc.page.getParameterByName("username", LeDoc.security.getUsername());
+            this.username = LeDoc.page.getParameterByName("username", '');
             LeDoc.security.thisPageRequestPrivilege(
                 LeDoc.security.privilegeOfAdmin,
                 () => {
                     this.iAmAdmin = true;
-                    this.loadUserInfo();
+                    if (this.username && this.username.length > 0) this.loadUserInfo();
                 },
                 (privilege) => {
                     if (this.username !== LeDoc.security.getUsername()) {
                         window.location.replace("index.html");
                     } else {
                         // self center to change name/pw
-                        this.loadUserInfo();
+                        if (this.username && this.username.length > 0) this.loadUserInfo();
                     }
                 }
             );
-            // load
-            this.loadUserInfo();
         }
     });
 </script>

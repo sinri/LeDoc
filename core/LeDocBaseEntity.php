@@ -86,4 +86,14 @@ abstract class LeDocBaseEntity
         }
         $this->properties[$propertyName][] = $item;
     }
+
+    /**
+     * @param string $propertyName
+     * @param $item
+     */
+    public function removeItemInArrayProperty(string $propertyName, $item)
+    {
+        $index = array_search($item, $this->properties[$propertyName]);
+        if ($index !== false) array_splice($this->properties[$propertyName], $index, 1);
+    }
 }
