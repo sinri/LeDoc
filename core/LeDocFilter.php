@@ -32,12 +32,13 @@ class LeDocFilter extends ArkRequestFilter
     public function shouldAcceptRequest($path, $method, $params, &$preparedData = null, &$responseCode = 200, &$error = null)
     {
         $publicApiList = [
-            "/api/SecurityController/login"
+            "/api/SecurityController/login",
+            "/api/UserController/registerUser",
         ];
         if (self::hasPrefixAmong($path, $publicApiList)) return true;
 
         // Session & Privilege Controller
-        $token = Ark()->webInput()->readRequest("token");
+        $token = Ark()->webInput()->readRequest("token", '');
         $session = SessionEntity::verifyToken($token);
         if (!$session) {
             $responseCode = 403;

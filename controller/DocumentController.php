@@ -91,7 +91,8 @@ class DocumentController extends LeDocBaseController
 
             $doc->title = $title;
             $doc->content = $content;
-            $doc->authors = [$this->user->username];
+            $doc->appendItemToArrayProperty('authors', $this->user->username);
+            $doc->authors = array_unique($doc->authors);
             $doc->appendHistory($this->user->username, "编辑文档", "");
 
             $done = $doc->save();

@@ -139,4 +139,32 @@ class UserController extends LeDocBaseController
             $this->_sayFail($exception->getMessage());
         }
     }
+
+    public function registerUser()
+    {
+        try {
+            $username = $this->_readRequest("username", null, '/^[A-Za-z0-9]+$/');
+            $password = $this->_readRequest('password');
+            $status = UserEntity::USER_STATUS_NORMAL;
+            $realname = $this->_readRequest('realname');
+            $privileges = [];
+
+            ArkHelper::quickNotEmptyAssert("field should not be empty", $username, $password, $realname);
+            $user = UserEntity::loadUser($username);
+            ArkHelper::quickNotEmptyAssert("user has been here", $user === false);
+
+            $user = new UserEntity();
+            $user->username = $username;
+            $user->realname = $realname;
+            $user->status = $status;
+            $user->privileges = $privileges;
+            $user->setRealPassword($password);
+            $done = $user->saveUser();
+            ArkHelper::quickNotEmptyAssert("cannot register user", $done);
+
+            $this->_sayOK();
+        } catch (\Exception $exception) {
+            $this->_sayFail($exception->getMessage());
+        }
+    }
 }

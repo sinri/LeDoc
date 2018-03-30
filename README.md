@@ -1,18 +1,37 @@
 # LeDoc
 
-> LeDoc is short for Le Document.
+LeDoc is short for Le Document, as a cooperating document system based on Pure PHP and File System.
+Support Markdown. 
 
-The document system for organization
+LeDoc 是一个超轻量级的企业协作文档系统，只需要支持PHP的服务器和操作系统的文件系统，就可以完成任务。
+支持Markdown语法。
 
------
+## Deploy
 
-唔，怎么说呢，这个就是想要搞一个企业级的文档的集中管理，所以会有以下的模块：
+1. Put the project to server
+1. Install PHP libraries with composer
+1. Create a new directory `runtime` in project directory and make it writable
+1. If use Apache 2, put `.htaccess` in project directory; or Nginx, write in site config file; to make all request to `index.php`
 
-* 用户：认证体系和权限体系
-* 文档：需要同时支持RTF和Markdown，并且要能上传附件
+All is OK now.
 
------
+P.S.
 
-关于文件夹。
-用户存一堆文件夹入场券（自己相关的文件夹），此外的均不显示。新建的话就自动变成manager，可以完全控制。
-有上级目录的就自动获得下级目录的相应权限。
+The content of `.htaccess` :
+
+```apacheconfig
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+``` 
+
+And the Nginx config sample：
+
+```nginx
+server {
+    location / {
+        try_files $uri $uri/ /index.php?$args;
+    }
+}
+```

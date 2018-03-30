@@ -19,7 +19,7 @@
             <h1 style="color:#e4e5e7;margin: 20px auto;">Le Document</h1>
         </Header>
         <Content>
-            <div style="width: 250px;margin: 100px auto;">
+            <div style="width: 300px;margin: 100px auto;">
                 <i-form style="text-align: center">
                     <form-item>
                         <h2>用户认证</h2>
@@ -38,8 +38,10 @@
                         </i-input>
                     </form-item>
                     <form-item>
-                        <i-button type="text" @click="onForgetPassword">忘记密码？</i-button>
-                        &nbsp;&nbsp;
+                        <i-button type="text" @click="onRegister">新用户注册</i-button>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
+                        <i-button type="text" @click="onForgetPassword">找回密码</i-button>
+                        &nbsp;&nbsp;&nbsp;&nbsp;
                         <i-button type="primary" @click="onLogin">登录</i-button>
                     </form-item>
                 </i-form>
@@ -58,6 +60,9 @@
             onForgetPassword: function () {
                 alert("先联系管理员帮你刷下库吧");
             },
+            onRegister: function () {
+                window.location.href = "register.html";
+            },
             onLogin: function () {
                 LeDoc.api.call(
                     "SecurityController/login",
@@ -74,7 +79,7 @@
                         })
                     }
                 )
-            }
+            },
         }
     })
 </script>
