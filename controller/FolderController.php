@@ -60,6 +60,9 @@ class FolderController extends LeDocBaseController
         $docHashList = $folder->getDocHashList();
         foreach ($docHashList as $docHash) {
             $doc = DocumentEntity::loadDocument($docHash, $pathComponents);
+            $tree_node_key = json_decode(json_encode($pathComponents));
+            $tree_node_key[] = $docHash;
+            $tree_node_key = json_encode($tree_node_key);
             $children[] = [
                 "doc_hash" => $docHash,
                 "title" => $doc->title,
@@ -72,9 +75,11 @@ class FolderController extends LeDocBaseController
                 "can_manage" => $folder->canUserManage($this->user->username),
                 "can_edit" => $folder->canUserEdit($this->user->username),
                 "can_read" => $folder->canUserRead($this->user->username),
+                "tree_node_key" => $tree_node_key,
             ];
         }
 
+        $tree_node_key = (json_encode($pathComponents));
         $node = [
             "title" => $folder->getFolderName(),
             "path_components" => $pathComponents,
@@ -87,6 +92,7 @@ class FolderController extends LeDocBaseController
             "can_manage" => $folder->canUserManage($this->user->username),
             "can_edit" => $folder->canUserEdit($this->user->username),
             "can_read" => $folder->canUserRead($this->user->username),
+            "tree_node_key" => $tree_node_key,
         ];
 
         return $node;

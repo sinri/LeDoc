@@ -47,7 +47,8 @@
                     </Row>
                     <Row style="margin-top: 10px;padding-top:10px;border-top: 1px solid gainsboro;">
                         <i-col span="20" offset="2">
-                            <Tree :data="folderTree" @on-select-change="onClickFolderTreeNode"></Tree>
+                            <Tree :data="folderTree" :render="renderFolderTreeNode"
+                                  @on-select-change="onClickFolderTreeNode"></Tree>
                             <!--:load-data="loadSubFolders"-->
                         </i-col>
                     </Row>
@@ -260,6 +261,81 @@
                     this.appendTreeNodeRender(node.children[i]);
                 }
             },
+            renderFolderTreeNode: function (h, {root, node, data}) {
+                let isNodeSelected = false;
+                if (data.type === this.openedObjectType) {
+                    isNodeSelected = (data.tree_node_key === this.openedObjectKey);
+                    // if(data.type==='file'){
+                    //     let k=LeDoc.data.copy(data.path_components);
+                    //     /k.push(data.doc_hash);
+                    //     isNodeSelected=(JSON.stringify(k)===this.openedObjectKey);
+                    // }else if (data.type==='dir'){
+                    //     isNodeSelected=(JSON.stringify(data.path_components)===this.openedObjectKey);
+                    // }
+                }
+
+                return h('span', {
+                    style: {
+                        display: 'inline-block',
+                        width: '100%'
+                    }
+                }, [
+                    h('span', [
+                        h('Icon', {
+                            props: {
+                                type: (data.type === 'file' ? 'ios-paper-outline' : 'folder')
+                            },
+                            style: {
+                                marginRight: '8px'
+                            }
+                        }),
+                        h(
+                            'span',
+                            {
+                                style: {
+                                    cursor: 'pointer',
+                                    //background: (isNodeSelected? 'lightgray':'white'),
+                                    background: (isNodeSelected ? '#4fb8ff40' : 'white'),
+                                    padding: '2px',
+                                },
+                                on: {
+                                    click: () => {
+                                        this.onClickFolderTreeNode([data])
+                                    }
+                                }
+                            },
+                            data.title
+                        )
+                    ]),
+                    // h('span', {
+                    //     style: {
+                    //         display: 'inline-block',
+                    //         float: 'right',
+                    //         marginRight: '32px'
+                    //     }
+                    // }, [
+                    //     h('Button', {
+                    //         props: Object.assign({}, this.buttonProps, {
+                    //             icon: 'ios-plus-empty'
+                    //         }),
+                    //         style: {
+                    //             marginRight: '8px'
+                    //         },
+                    //         on: {
+                    //             click: () => { this.append(data) }
+                    //         }
+                    //     }),
+                    //     h('Button', {
+                    //         props: Object.assign({}, this.buttonProps, {
+                    //             icon: 'ios-minus-empty'
+                    //         }),
+                    //         on: {
+                    //             click: () => { this.remove(root, node, data) }
+                    //         }
+                    //     })
+                    // ])
+                ]);
+            },
             loadFolderTree: function (callback) {
                 let that = this;
                 LeDoc.api.call(
@@ -293,13 +369,14 @@
                 //     tail:selectedItems[0].tail,
                 // };
                 this.openedObjectType = selectedItems[0].type;
-                if (selectedItems[0].type === 'dir') {
-                    this.openedObjectKey = JSON.stringify(selectedItems[0].path_components);
-                } else if (selectedItems[0].type === 'file') {
-                    let x = LeDoc.data.copy(selectedItems[0].path_components);
-                    x.push(selectedItems[0].doc_hash);
-                    this.openedObjectKey = JSON.stringify(x);
-                }
+                this.openedObjectKey = selectedItems[0].tree_node_key;
+                // if (selectedItems[0].type === 'dir') {
+                //     this.openedObjectKey = JSON.stringify(selectedItems[0].path_components);
+                // } else if (selectedItems[0].type === 'file') {
+                //     let x = LeDoc.data.copy(selectedItems[0].path_components);
+                //     x.push(selectedItems[0].doc_hash);
+                //     this.openedObjectKey = JSON.stringify(x);
+                // }
                 console.log(this.folderTreeNodes);
             },
             loadSubFolders: function (item, callback) {
@@ -445,7 +522,7 @@
                 }
             },
             openSubFolder: function (child) {
-                this.openedObjectKey = JSON.stringify(child.path_components);
+                this.openedObjectKey = child.tree_node_key;//JSON.stringify(child.path_components);
                 this.openedObjectType = 'dir';
             },
             openDocument: function (child) {
