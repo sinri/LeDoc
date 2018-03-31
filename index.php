@@ -25,7 +25,11 @@ Ark()->webService()->getRouter()->loadAllControllersInDirectoryAsCI(
     ]
 );
 
-Ark()->webService()->getRouter()->get("", function ($post, $comment) {
+Ark()->webService()->getRouter()->get("share/{shareIndex}", function ($shareIndex) {
+    header("Location: ../frontend/shared.html?share_index=" . urlencode($shareIndex));
+});
+
+Ark()->webService()->getRouter()->get("", function () {
     header("Location: ./frontend/index.html");
 });
 

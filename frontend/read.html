@@ -55,10 +55,20 @@
                 </i-col>
             </Row>
             <Row style="margin: 10px">
-                <i-col span="24">
+                <i-col span="12">
                     <i-button v-if="can_edit" type="default" icon="edit" @click="editDocument">编辑</i-button>
                     &nbsp;
                     <i-button v-if="can_edit" type="error" icon="ios-trash" @click="removeDocument">删除</i-button>
+                </i-col>
+                <i-col span="12" style="text-align: right;">
+                    <template v-if="share.shareURL!==''">
+                        复制此链接以分享:
+                        <a href="{{share.shareURL}}" target="_blank">{{share.shareURL}}</a>
+                        <!--<i-input type="text" v-model="share.shareURL" readonly style="width: 100px"></i-input>-->
+                    </template>
+                    <template v-else>
+                        <i-button type="info" icon="share" @click="showShareDocumentPane">分享</i-button>
+                    </template>
                 </i-col>
             </Row>
         </Content>
@@ -66,6 +76,24 @@
             <ledoc-buttom-bar></ledoc-buttom-bar>
         </Footer>
     </Layout>
+    <Modal v-model="display_share_document_pane" :loading="calling_share_document_api" title="分享本文档"
+           @on-ok="callShareDocApi">
+        <i-form :label-width="100">
+            <form-item label="口令">
+                <i-input type="text" placeholder="如果需要口令保护则填写口令，不需要可以置空" v-model="share.secret"></i-input>
+            </form-item>
+            <form-item label="时限">
+                <i-input type="text" placeholder="为0时将永久有效" v-model="share.expireValue">
+                    <i-select slot="append" v-model="share.expireUnit" style="width: 70px">
+                        <i-option value="86400">天</i-option>
+                        <i-option value="3600">小时</i-option>
+                        <i-option value="60">分钟</i-option>
+                        <i-option value="1">秒</i-option>
+                    </i-select>
+                </i-input>
+            </form-item>
+        </i-form>
+    </Modal>
 </div>
 <script>
     new Vue({
@@ -76,6 +104,14 @@
             doc: {},
             preview: '',
             can_edit: false,
+            display_share_document_pane: false,
+            calling_share_document_api: false,
+            share: {
+                secret: '',
+                expireValue: '',
+                expireUnit: '1',
+                shareURL: '',
+            },
         },
         methods: {
             loadDocumentToRead: function () {
@@ -112,9 +148,37 @@
                         LeDoc.ui.showTopAlert(this, error);
                     }
                 )
+            },
+            showShareDocumentPane: function () {
+                this.display_share_document_pane = true;
+            },
+            callShareDocApi: function () {
+                if (this.share.expireValue.length === 0) this.share.expireValue = 0;
+                let expire = this.share.expireValue * parseInt(this.share.expireUnit, 10);
+                this.calling_share_document_api = true;
+                LeDoc.api.call(
+                    "ShareController/shareDocument",
+                    {
+                        folder: this.folder,
+                        doc_hash: this.doc_hash,
+                        secret: this.share.secret,
+                        expire: expire,
+                    },
+                    (data) => {
+                        this.share.shareURL = LeDoc.page.getSiteRoot() + "/share/" + data.share_index;
+                        alert("分享成功！可以在右下角复制URL。");
+                        this.calling_share_document_api = false;
+                    },
+                    (error, code) => {
+                        alert("分享失败。" + error);
+                        this.calling_share_document_api = false;
+                        this.display_share_document_pane = true;
+                    }
+                )
             }
         },
         mounted: function () {
+            console.log("getSiteRoot", LeDoc.page.getSiteRoot());
             let folder_hash = LeDoc.page.getParameterByName("folder_hash", null);
             if (folder_hash === null) {
                 alert("竟然不给出目录");

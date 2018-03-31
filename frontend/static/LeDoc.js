@@ -90,6 +90,11 @@ let LeDoc = {
             let match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
             let v = match && decodeURIComponent(match[1].replace(/\+/g, ' '));
             return v ? v : defaultValue;
+        },
+        getSiteRoot: function () {
+            let x1 = document.location.pathname.lastIndexOf("/frontend/");
+            let siteRoot = document.location.protocol + "//" + document.location.host + document.location.pathname.substr(0, x1);
+            return siteRoot;
         }
     },
     ui: {

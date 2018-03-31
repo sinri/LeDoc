@@ -147,4 +147,12 @@ class DocumentEntity extends LeDocBaseEntity
         }
         return $info;
     }
+
+    public function getShareKey($shareUsername)
+    {
+        $x = json_decode(json_encode($this->folder->getPathComponents()), true);
+        array_unshift($x, $shareUsername);
+        $x[] = $this->docHash;
+        return json_encode($x);
+    }
 }

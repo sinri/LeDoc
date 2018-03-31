@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Shared - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <script type="text/javascript" src="static/sdk/marked.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/sdk/github-markdown.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <h1 style="color:#e4e5e7;margin: 20px auto;" v-on:click="goHome">Le Document</h1>
+        </Header>
+        <Content>
+            <template v-if="error!==''">
+                <Row style="margin: 20px auto;">
+                    <i-col span="8" offset="8">
+                        <Alert type="error">
+                            无法打开指定的分享文档。错误：{{error}}
+                        </Alert>
+                    </i-col>
+                </Row>
+            </template>
+            <template v-else>
+                <template v-if="is_need_secret">
+                    <Row style="min-height: 300px;text-align: center">
+                        <i-col span="6" offset="9">
+                            <Row style="margin: 20px auto;">
+                                <i-col span="24" style="margin: 20px auto;">
+                                    想要观测 {{owner}} 分享的文档需要核验口令
+                                </i-col>
+                                <i-col span="24" style="margin: 20px auto;">
+                                    <i-input type="password" v-model="secret"></i-input>
+                                </i-col>
+                                <i-col span="24" style="margin: 20px auto;">
+                                    <i-button type="primary" @click="loadDocumentToRead">确认</i-button>
+                                </i-col>
+                            </Row>
+
+                        </i-col>
+                    </Row>
+                </template>
+                <template v-else>
+                    <Row style="margin: 10px;padding-bottom: 10px;border-bottom: 1px solid #495060;min-height: 300px">
+                        <i-col span="24">
+                            <div class="markdown-body" v-html="preview"></div>
+                        </i-col>
+                    </Row>
+                    <Row style="margin: 10px;padding-bottom: 10px;border-bottom: 1px solid #495060;">
+                        <i-col span="24" v-if="false">
+                            由
+                            <Tag v-for="username in doc.authors">
+                                {{doc.author_dict[username].realname}}({{username}})
+                            </Tag>
+                            编写。
+                        </i-col>
+                        <i-col span="24">
+                            <p>历史记录</p>
+                            <p v-for="item in doc.history">
+                                {{item.date}}
+                                {{doc.author_dict[item.act_user].realname}}({{item.act_user}}):
+                                {{item.action}}
+                                <span style="font-style: italic">{{item.remark}}</span>
+                            </p>
+                        </i-col>
+                    </Row>
+                </template>
+            </template>
+        </Content>
+        <Footer>
+            <ledoc-buttom-bar></ledoc-buttom-bar>
+        </Footer>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            share_index: '',
+            error: '',
+
+            folder: null,
+            doc_hash: null,
+            doc: {},
+            preview: '',
+            can_edit: false,
+
+            is_need_secret: true,
+            secret: '',
+            owner: '',
+
+        },
+        methods: {
+            loadShareIndex: function () {
+                LeDoc.api.call(
+                    "ShareController/parseShareIndex",
+                    {
+                        share_index: this.share_index
+                    },
+                    (data) => {
+                        this.is_need_secret = data.is_need_secret;
+                        this.folder = data.folder;
+                        this.doc_hash = data.doc_hash;
+                        this.owner = data.owner;
+
+                        if (!this.is_need_secret) {
+                            this.loadDocumentToRead();
+                        } else {
+                            // await
+                        }
+                    },
+                    (error, code) => {
+                        this.error = "请求分享内容失败。错误：" + error;
+                    }
+                )
+            },
+            loadDocumentToRead: function () {
+                LeDoc.api.call(
+                    "ShareController/getSharedDocument",
+                    {
+                        share_index: this.share_index,
+                        secret: this.secret,
+                    },
+                    (data) => {
+                        this.doc = data.doc;
+                        this.can_edit = data.can_edit;
+                        this.preview = marked(data.doc.content, {sanitize: true});
+                        this.is_need_secret = false;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载失败。" + error);
+                    }
+                )
+            },
+            goHome: function () {
+                window.location.href = "index.html";
+            }
+        },
+        mounted: function () {
+            this.share_index = LeDoc.page.getParameterByName("share_index", '');
+            if (this.share_index === '') {
+                this.error = "分享索引不合法";
+            }
+            this.loadShareIndex();
+        }
+    });
+</script>
+</body>
+</html>
