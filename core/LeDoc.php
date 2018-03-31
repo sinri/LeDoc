@@ -37,6 +37,11 @@ class LeDoc
         return max(intval($x, 10), 60);
     }
 
+    public static function configOfCopyright()
+    {
+        return self::readConfig(['copyright'], "Sinri Edogawa 及相关文档作者对文档内容保留所有权利，未经许可不得进行转载变更等行径。");
+    }
+
     protected static $logger;
 
     /**

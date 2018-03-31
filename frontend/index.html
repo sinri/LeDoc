@@ -339,7 +339,6 @@
             loadFolderTree: function (callback) {
                 let that = this;
                 LeDoc.api.call(
-                    //"DashboardController/getDashboardData",
                     "FolderController/getMyFoldersAsTree",
                     {},
                     (data) => {

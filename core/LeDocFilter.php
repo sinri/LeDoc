@@ -34,6 +34,7 @@ class LeDocFilter extends ArkRequestFilter
         $publicApiList = [
             "/api/SecurityController/login",
             "/api/UserController/registerUser",
+            "/SiteController/",
         ];
         if (self::hasPrefixAmong($path, $publicApiList)) return true;
 

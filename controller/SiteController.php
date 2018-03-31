@@ -9,17 +9,16 @@
 namespace sinri\ledoc\controller;
 
 
+use sinri\ledoc\core\LeDoc;
 use sinri\ledoc\core\LeDocBaseController;
 
-class DashboardController extends LeDocBaseController
+class SiteController extends LeDocBaseController
 {
-    public function getDashboardData()
+    public function getCopyrightInfo()
     {
         try {
-            // TODO get the folder (as root) list
-            $folderList = $this->user->getUserRelatedFolders();
-
-            $this->_sayOK(['folders' => $folderList]);
+            $copyright = LeDoc::configOfCopyright();
+            $this->_sayOK(['copyright' => $copyright]);
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());
         }
