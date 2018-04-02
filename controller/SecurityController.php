@@ -24,17 +24,17 @@ class SecurityController extends LeDocBaseController
             $username = $this->_readRequest("username", "");
             $password = $this->_readRequest("password", "");
 
-            ArkHelper::quickNotEmptyAssert("Fields should not be empty", $username, $password);
+            ArkHelper::quickNotEmptyAssert("登录参数不可为空", $username, $password);
 
             $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("User does not exist", $user);
-            ArkHelper::quickNotEmptyAssert("Password Error", (password_verify($password, $user->passwordHash)));
-            ArkHelper::quickNotEmptyAssert("User is no longer active", ($user->status === UserEntity::USER_STATUS_NORMAL));
+            ArkHelper::quickNotEmptyAssert("用户不存在", $user);
+            ArkHelper::quickNotEmptyAssert("密码错误", (password_verify($password, $user->passwordHash)));
+            ArkHelper::quickNotEmptyAssert("用户已经不可用", ($user->status === UserEntity::USER_STATUS_NORMAL));
 
             $token = uniqid(date('YmdHis_'));
             $expire = time() + LeDoc::configOfSessionLifetime();
             $done = SessionEntity::createSession($user->username, $token, $expire);
-            ArkHelper::quickNotEmptyAssert("Cannot create session", $done);
+            ArkHelper::quickNotEmptyAssert("无法创建会话", $done);
 
             $this->_sayOK([
                 "username" => $user->username,

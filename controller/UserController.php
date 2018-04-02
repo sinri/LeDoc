@@ -51,9 +51,9 @@ class UserController extends LeDocBaseController
     {
         try {
             $username = $this->_readRequest("username");
-            ArkHelper::quickNotEmptyAssert("username should not be empty", $username);
+            ArkHelper::quickNotEmptyAssert("用户名不可为空", $username);
             $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("user not here", $user);
+            ArkHelper::quickNotEmptyAssert("用户不存在", $user);
 
             $info = [
                 "username" => $user->username,
@@ -73,9 +73,9 @@ class UserController extends LeDocBaseController
     {
         try {
             $username = $this->_readRequest("username", null, '/^[A-Za-z0-9]+$/');
-            ArkHelper::quickNotEmptyAssert("username should not be empty", $username);
+            ArkHelper::quickNotEmptyAssert("用户名不可为空", $username);
             $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("user not here", $user);
+            ArkHelper::quickNotEmptyAssert("用户不存在", $user);
 
             $data = [];
 
@@ -103,7 +103,7 @@ class UserController extends LeDocBaseController
                 } else $user->$key = $value;
             }
             $done = $user->saveUser();
-            ArkHelper::quickNotEmptyAssert("cannot change user", $done);
+            ArkHelper::quickNotEmptyAssert("无法更新用户信息", $done);
             $this->_sayOK();
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());
@@ -119,11 +119,11 @@ class UserController extends LeDocBaseController
             $realname = $this->_readRequest('realname');
             $privileges = $this->_readRequest('privileges');
 
-            ArkHelper::quickNotEmptyAssert("field should not be empty", $username, $password, $realname);
-            ArkHelper::quickNotEmptyAssert("status error", in_array($status, [UserEntity::USER_STATUS_NORMAL, UserEntity::USER_STATUS_DISABLED]));
-            ArkHelper::quickNotEmptyAssert("privileges should be array", is_array($privileges));
+            ArkHelper::quickNotEmptyAssert("参数不可为空", $username, $password, $realname);
+            ArkHelper::quickNotEmptyAssert("状态不能编造", in_array($status, [UserEntity::USER_STATUS_NORMAL, UserEntity::USER_STATUS_DISABLED]));
+            ArkHelper::quickNotEmptyAssert("权限参数应为数组", is_array($privileges));
             $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("user has been here", $user === false);
+            ArkHelper::quickNotEmptyAssert("用户已经存在", $user === false);
 
             $user = new UserEntity();
             $user->username = $username;
@@ -132,7 +132,7 @@ class UserController extends LeDocBaseController
             $user->privileges = $privileges;
             $user->setRealPassword($password);
             $done = $user->saveUser();
-            ArkHelper::quickNotEmptyAssert("cannot save user", $done);
+            ArkHelper::quickNotEmptyAssert("无法新建用户", $done);
 
             $this->_sayOK();
         } catch (\Exception $exception) {
@@ -149,9 +149,9 @@ class UserController extends LeDocBaseController
             $realname = $this->_readRequest('realname');
             $privileges = [];
 
-            ArkHelper::quickNotEmptyAssert("field should not be empty", $username, $password, $realname);
+            ArkHelper::quickNotEmptyAssert("参数不可为空", $username, $password, $realname);
             $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("user has been here", $user === false);
+            ArkHelper::quickNotEmptyAssert("用户已存在", $user === false);
 
             $user = new UserEntity();
             $user->username = $username;
@@ -160,7 +160,7 @@ class UserController extends LeDocBaseController
             $user->privileges = $privileges;
             $user->setRealPassword($password);
             $done = $user->saveUser();
-            ArkHelper::quickNotEmptyAssert("cannot register user", $done);
+            ArkHelper::quickNotEmptyAssert("无法注册用户", $done);
 
             $this->_sayOK();
         } catch (\Exception $exception) {

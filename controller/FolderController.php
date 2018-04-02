@@ -102,10 +102,10 @@ class FolderController extends LeDocBaseController
     {
         try {
             $root = $this->_readRequest("root", []);
-            ArkHelper::quickNotEmptyAssert("root should be array", is_array($root));
+            ArkHelper::quickNotEmptyAssert("目录参数应为数组", is_array($root));
             $folder = FolderEntity::loadFolderByPathComponents($root);
-            ArkHelper::quickNotEmptyAssert("not a folder", $folder);
-            ArkHelper::quickNotEmptyAssert("not your folder", $folder->isUserRelated($this->user->username));
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
+            ArkHelper::quickNotEmptyAssert("无权访问此目录", $folder->isUserRelated($this->user->username));
 
             $subFolderPathList = $folder->getSubFolderPathComponents();
             $fileList = $folder->getDocHashList();
@@ -121,7 +121,7 @@ class FolderController extends LeDocBaseController
         try {
             $parent = $this->_readRequest("parent", []);
             $folderName = $this->_readRequest("name");
-            ArkHelper::quickNotEmptyAssert("Input Error", is_array($parent), $folderName);
+            ArkHelper::quickNotEmptyAssert("新建目录参数不正常", is_array($parent), $folderName);
 
             LeDoc::logger()->debug(__METHOD__ . '@' . __LINE__, [
                 "parent" => $parent, "folder_name" => $folderName, "current_user" => $this->user->encodePropertiesForJson()
@@ -131,8 +131,13 @@ class FolderController extends LeDocBaseController
 
             LeDoc::logger()->debug(__METHOD__ . '@' . __LINE__, ['parentFolder.path' => $parentFolder->getPathComponents()]);
 
-            $done = $parentFolder->createSubFolder($folderName, (empty($parent) ? $this->user->username : null));
-            ArkHelper::quickNotEmptyAssert("cannot create sub folder", $done);
+            if (empty($parent)) {
+                $done = $parentFolder->createSubFolder($folderName, $this->user->username);
+            } else {
+                $parentFolder->canUserEdit($this->user->username);
+                $done = $parentFolder->createSubFolder($folderName, null);
+            }
+            ArkHelper::quickNotEmptyAssert("无法创建下级目录", $done);
             $this->_sayOK();
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());
@@ -143,16 +148,16 @@ class FolderController extends LeDocBaseController
     {
         try {
             $root = $this->_readRequest("folder", []);
-            ArkHelper::quickNotEmptyAssert("folder should be array", is_array($root));
+            ArkHelper::quickNotEmptyAssert("目录参数应为数组", is_array($root));
             $folder = FolderEntity::loadFolderByPathComponents($root);
-            ArkHelper::quickNotEmptyAssert("not a folder", $folder);
-            ArkHelper::quickNotEmptyAssert("not your folder", $folder->isUserRelated($this->user->username));
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
+            ArkHelper::quickNotEmptyAssert("无权访问此目录", $folder->canUserEdit($this->user->username));
 
             $newName = $this->_readRequest("name");
-            ArkHelper::quickNotEmptyAssert("new name should not be empty", $newName);
+            ArkHelper::quickNotEmptyAssert("新目录名不能为空", $newName);
 
             $done = $folder->renameTo($newName);
-            ArkHelper::quickNotEmptyAssert("cannot rename folder", $done);
+            ArkHelper::quickNotEmptyAssert("无法更名", $done);
 
             $this->user->spliceRelatedTopFolderPath($root, $newName);
             $this->user->saveUser();
@@ -167,10 +172,10 @@ class FolderController extends LeDocBaseController
     {
         try {
             $root = $this->_readRequest("folder", []);
-            ArkHelper::quickNotEmptyAssert("folder should be array", is_array($root));
+            ArkHelper::quickNotEmptyAssert("目录参数应为数组", is_array($root));
             $folder = FolderEntity::loadFolderByPathComponents($root);
-            ArkHelper::quickNotEmptyAssert("not a folder", $folder);
-            ArkHelper::quickNotEmptyAssert("not your folder", $folder->isUserRelated($this->user->username));
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
+            ArkHelper::quickNotEmptyAssert("无权删除目录", $folder->canUserManage($this->user->username));
 
             $dead = $folder->suicide();
             if ($dead) {
@@ -187,10 +192,10 @@ class FolderController extends LeDocBaseController
     {
         try {
             $root = $this->_readRequest("folder", []);
-            ArkHelper::quickNotEmptyAssert("folder should be array", is_array($root));
+            ArkHelper::quickNotEmptyAssert("目录参数应为数组", is_array($root));
             $folder = FolderEntity::loadFolderByPathComponents($root);
-            ArkHelper::quickNotEmptyAssert("not a folder", $folder);
-            ArkHelper::quickNotEmptyAssert("not your folder", $folder->isUserRelated($this->user->username));
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
+            ArkHelper::quickNotEmptyAssert("无权访问目录", $folder->isUserRelated($this->user->username));
 
             $result = $folder->getRelatedUsers();
             $result['by_path'] = array_reverse($result['by_path']);
@@ -216,13 +221,13 @@ class FolderController extends LeDocBaseController
     {
         try {
             $folderPathComponents = $this->_readRequest("folder");
-            ArkHelper::quickNotEmptyAssert("folderPathComponents error", $folderPathComponents, is_array($folderPathComponents));
+            ArkHelper::quickNotEmptyAssert("目录参数应为数组", $folderPathComponents, is_array($folderPathComponents));
             $folder = FolderEntity::loadFolderByPathComponents($folderPathComponents);
-            ArkHelper::quickNotEmptyAssert("folder error", $folder);
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
 
             $username = $this->_readRequest("username");
             $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("user error " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
+            ArkHelper::quickNotEmptyAssert("用户错误 " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
 
             $folder->removePermissionOfUser($user->username);
             $folder->saveMeta();
@@ -241,19 +246,19 @@ class FolderController extends LeDocBaseController
     {
         try {
             $folderPathComponents = $this->_readRequest("folder");
-            ArkHelper::quickNotEmptyAssert("folderPathComponents error", $folderPathComponents, is_array($folderPathComponents));
+            ArkHelper::quickNotEmptyAssert("目录参数应为数组", $folderPathComponents, is_array($folderPathComponents));
             $folder = FolderEntity::loadFolderByPathComponents($folderPathComponents);
-            ArkHelper::quickNotEmptyAssert("folder error", $folder);
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
 
             $type = $this->_readRequest("type");
-            ArkHelper::quickNotEmptyAssert("type error", in_array($type, ['reader', 'editor', 'manager']));
+            ArkHelper::quickNotEmptyAssert("授权类型错误", in_array($type, ['reader', 'editor', 'manager']));
 
             $username_list = $this->_readRequest('username_list');
-            ArkHelper::quickNotEmptyAssert("username_list should be array", $username_list, is_array($username_list));
+            ArkHelper::quickNotEmptyAssert("用户名列表应为数组", $username_list, is_array($username_list));
 
             foreach ($username_list as $username) {
                 $user = UserEntity::loadUser($username);
-                ArkHelper::quickNotEmptyAssert("user error " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
+                ArkHelper::quickNotEmptyAssert("用户出错 " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
 
                 $folder->permitUser($type, $user->username);
                 $user->whenNewPermissionCreated($folder->getPathComponents());
