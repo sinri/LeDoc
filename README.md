@@ -12,6 +12,7 @@ LeDoc 是一个超轻量级的企业协作文档系统，只需要支持PHP的�
 1. Install PHP libraries with composer
 1. Create a new directory `runtime` in project directory and make it writable
 1. If use Apache 2, put `.htaccess` in project directory; or Nginx, write in site config file; to make all request to `index.php`
+1. Make `runtime` not accessible by Apache/Nginx configuration
 
 All is OK now.
 

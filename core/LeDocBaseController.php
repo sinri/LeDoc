@@ -48,4 +48,17 @@ class LeDocBaseController extends ArkWebController
         return Ark()->webInput()->readRequest($name, $default, $regex, $error);
     }
 
+    /**
+     * @param string|string[] $privileges
+     * @throws \Exception
+     */
+    protected function _requirePrivileges($privileges)
+    {
+        if (!is_array($privileges)) $privileges = [$privileges];
+        foreach ($privileges as $privilege)
+            if (!$this->user->hasPrivilege(UserEntity::USER_PRIVILEGES_ADMIN)) {
+                throw new \Exception("没有权限:" . $privilege);
+            }
+    }
+
 }
