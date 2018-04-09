@@ -658,7 +658,11 @@
                         },
                         (data) => {
                             this.documentCanEdit = data.can_edit;
-                            this.documentPreview = marked(data.doc.content, {sanitize: true});
+                            if (data.doc.type === 'wangeditor') {
+                                this.documentPreview = data.doc.content;
+                            } else {
+                                this.documentPreview = marked(data.doc.content, {sanitize: true});
+                            }
                         },
                         (error, code) => {
                             LeDoc.ui.showTopAlert(this, "加载失败。" + error);

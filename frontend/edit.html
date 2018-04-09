@@ -8,6 +8,7 @@
     <script type="text/javascript" src="static/sdk/iview.min.js"></script>
     <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
     <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="https://unpkg.com/wangeditor/release/wangEditor.min.js"></script>
     <script type="text/javascript" src="static/LeDoc.js"></script>
     <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
     <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
@@ -36,6 +37,15 @@
                                 <i-input type="text" v-model="draft.title" placeholder="标题"></i-input>
                             </form-item>
                             <form-item>
+                                <i-select v-model="draft.type">
+                                    <i-option value="markdown">Markdown</i-option>
+                                    <i-option value="wangeditor">WangEditor</i-option>
+                                </i-select>
+                            </form-item>
+                            <form-item v-if="draft.type==='wangeditor'">
+                                <div ref="wangeditor" style="text-align:left"></div>
+                            </form-item>
+                            <form-item v-else>
                                 <i-input type="textarea" v-model="draft.content" :autosize="{ minRows: 10 }"
                                          placeholder="Markdown"></i-input>
                             </form-item>
@@ -70,6 +80,7 @@
     </Layout>
 </div>
 <script>
+    let E = window.wangEditor;
     new Vue({
         el: '#app',
         data: {
@@ -78,7 +89,7 @@
             draft: {
                 title: '',
                 content: '',
-                type: 'markdown',
+                type: 'wangeditor',
             }
         },
         methods: {
@@ -151,6 +162,14 @@
             if (this.doc_hash !== null) {
                 this.loadDocumentToEdit();
             }
+
+            let editor = new E(this.$refs.wangeditor);
+            editor.customConfig.onchange = (html) => {
+                this.draft.content = html;
+            };
+            editor.create();
+
+            // TODO upload file! see https://www.kancloud.cn/wangfupeng/wangeditor3/335782
 
         }
     });

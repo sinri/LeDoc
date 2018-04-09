@@ -124,7 +124,11 @@
                     (data) => {
                         this.doc = data.doc;
                         this.can_edit = data.can_edit;
-                        this.preview = marked(data.doc.content, {sanitize: true});
+                        if (this.doc.type === 'wangeditor') {
+                            this.preview = data.doc.content;
+                        } else {
+                            this.preview = marked(data.doc.content, {sanitize: true});
+                        }
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, "加载失败。" + error);
