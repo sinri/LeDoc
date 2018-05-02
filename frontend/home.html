@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Home - LeDoc</title>
+    <link rel="stylesheet" type="text/css" href="static/sdk/iview.css">
+    <script type="text/javascript" src="static/sdk/vue.js"></script>
+    <script type="text/javascript" src="static/sdk/iview.min.js"></script>
+    <script type="text/javascript" src="static/sdk/js.cookie-2.2.0.min.js"></script>
+    <script type="text/javascript" src="static/sdk/axios.min.js"></script>
+    <script type="text/javascript" src="static/LeDoc.js"></script>
+    <script type="text/javascript" src="static/components/LeDocTopBar.js"></script>
+    <script type="text/javascript" src="static/components/LeDocBottomBar.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/universal.css">
+    <link rel="stylesheet" type="text/css" href="https://code.ionicframework.com/ionicons/2.0.1/css/ionicons.min.css">
+    <script type="text/javascript" src="static/sdk/marked.js"></script>
+    <link rel="stylesheet" type="text/css" href="static/sdk/github-markdown.css">
+</head>
+<body>
+<div id="app">
+    <Layout style="background-color: transparent">
+        <Header style="height: 80px;text-align: center;background-color: #5b6270">
+            <ledoc-top-bar></ledoc-top-bar>
+        </Header>
+        <Content>
+            <Row>
+                <i-col span="6" style="border-right: 1px solid gainsboro;min-height: 300px">
+                    <Row style="margin-top: 10px">
+                        <i-col span="12" offset="2">
+                            <h2>
+                                我的文件夹
+                            </h2>
+                        </i-col>
+                        <i-col span="8" style="text-align: right">
+                            <i-button type="default" icon="refresh" @click="loadFolderTree">刷新目录</i-button>
+                        </i-col>
+                    </Row>
+                    <Row style="margin-top: 10px">
+                        <i-col span="10" offset="2">
+                            <i-button type="text">
+                                共{{folderTree.length}}个。
+                            </i-button>
+                        </i-col>
+                        <i-col span="10" style="text-align: right">
+                            <i-button type="default" icon="plus" @click="createTopFolder">新建顶级文件夹</i-button>
+                        </i-col>
+                    </Row>
+                    <Row style="margin-top: 10px;padding-top:10px;border-top: 1px solid gainsboro;">
+                        <i-col span="20" offset="2">
+                            <Tree :data="folderTree" :render="renderFolderTreeNode"
+                                  @on-select-change="onClickFolderTreeNode"></Tree>
+                            <!--:load-data="loadSubFolders"-->
+                        </i-col>
+                    </Row>
+                </i-col>
+                <i-col span="18" style="padding: 10px">
+                    <template v-if="openedObjectType==='none'">
+                        <p>在左侧选择目录或文档。</p>
+                    </template>
+                    <template v-if="openedObjectType==='dir'">
+                        <Row>
+                            <i-col span="24" style="background-color: #e9eaec;padding: 10px;">
+                                <Breadcrumb>
+                                    <breadcrumb-item>
+                                        <i-button style="font-style: italic" type="text" size="small"
+                                                  @click="closeDesktop">Root
+                                        </i-button>
+                                    </breadcrumb-item>
+                                    <breadcrumb-item style="font-style: italic"
+                                                     v-for="(item,index) in openedObject.base">
+                                        {{item}}
+                                    </breadcrumb-item>
+                                    <breadcrumb-item v-for="(item,index) in openedObject.tail">
+                                        <i-button type="text" size="small" @click="openUpperFolder(index)">{{item}}
+                                        </i-button>
+                                    </breadcrumb-item>
+                                    <!--v-if="index<openedObject.path_components.length-1"-->
+                                </Breadcrumb>
+                            </i-col>
+                        </Row>
+                        <Row style="margin-top: 20px;padding-bottom:20px;border-bottom: 1px solid lightsteelblue">
+                            <i-col span="18">
+                                <h1 style="line-height: 32px;">
+                                    <Icon type="folder"></Icon>
+                                    {{openedObject.title}}
+                                </h1>
+                            </i-col>
+                            <i-col span="6" style="text-align: right">
+                                <i-button type="error" icon="trash-a"
+                                          @click="removeFolder(openedObject.path_components,true)">删除
+                                </i-button>
+                                &nbsp;
+                                <i-button type="default" icon="edit" @click="renameFolder">重新命名</i-button>
+                            </i-col>
+                        </Row>
+                        <Row style="margin-top: 20px;padding-bottom:20px;border-bottom: 1px solid lightsteelblue">
+                            <i-col span="18">
+                                <h2>内容物</h2>
+                            </i-col>
+                            <i-col span="6" style="text-align: right">
+                                <i-button type="default" icon="ios-compose-outline" @click="createDocument">新建文档
+                                </i-button>
+                                &nbsp;
+                                <i-button type="default" icon="edit" @click="createSubFolder">创建下级目录</i-button>
+                            </i-col>
+                            <i-col span="24">
+                                <template v-for="child in openedObject.children">
+                                    <i-button type="text" icon="folder" v-if="child.type==='dir'"
+                                              @click="openSubFolder(child)">{{child.title}}
+                                    </i-button>
+                                    <i-button type="text" icon="document" v-if="child.type==='file'"
+                                              @click="openDocument(child)">{{child.title}}
+                                    </i-button>
+                                </template>
+                            </i-col>
+                        </Row>
+                        <Row style="margin-top: 20px;padding-bottom:20px;">
+                            <i-col span="12">
+                                <h2>授权</h2>
+                            </i-col>
+                            <i-col span="12" style="text-align: right;line-height: 30px;">
+                                显示授权面板&nbsp;
+                                <i-switch size="small" v-model="showPermitPane"></i-switch>
+                            </i-col>
+                            <i-col span="24" v-if="showPermitPane">
+                                <Row style="border: 1px solid lightsteelblue;margin: 10px;padding: 10px">
+                                    <i-col span="2">
+                                        <i-button type="text">添加授权</i-button>
+                                    </i-col>
+                                    <i-col span="5" offset="1">
+                                        <i-select v-model="permitData.type">
+                                            <i-option value="reader">阅读者</i-option>
+                                            <i-option value="editor">编写者</i-option>
+                                            <i-option value="manager">管理员</i-option>
+                                        </i-select>
+                                    </i-col>
+                                    <i-col span="12" offset="1">
+                                        <i-select v-model="permitData.username_list" multiple filterable>
+                                            <i-option v-for="user in user_list" :value="user.username">{{user.realname}}
+                                                ({{user.username}})
+                                            </i-option>
+                                        </i-select>
+                                    </i-col>
+                                    <i-col span="2" offset="1">
+                                        <i-button type="default" @click="permitUser">添加</i-button>
+                                    </i-col>
+                                </Row>
+                            </i-col>
+                            <i-col span="24">
+                                <div v-for="user in openedObjectPermissions">
+                                    {{user.realname}} :
+                                    <Tooltip v-for="permission in user.permissions" placement="top"
+                                             :content="(permission.is_direct_permission?('当前目录直接授权'):('继承自目录 '+permission.path_components.join('/')+' 的授权'))">
+                                        <Tag :name="permission.type" @on-close="revokePermission(user.username)"
+                                             :closable="permission.is_direct_permission && openedObjectManageable">
+                                            {{permission.type}}
+                                        </Tag>
+                                    </Tooltip>
+                                </div>
+                            </i-col>
+                        </Row>
+                    </template>
+                    <template v-if="openedObjectType==='file'">
+                        <!--<p>{{openedObject}}</p>-->
+                        <Row style="margin: 10px;padding-bottom:10px;border-bottom: 1px solid #495060;">
+                            <i-col span="24" style="background-color: #e9eaec;padding: 10px;">
+                                <Breadcrumb>
+                                    <breadcrumb-item v-for="item in openedObject.path_components">{{item}}
+                                    </breadcrumb-item>
+                                    <breadcrumb-item>{{ openedObject.doc_hash }}: {{openedObject.title}}
+                                    </breadcrumb-item>
+                                </Breadcrumb>
+                            </i-col>
+                        </Row>
+                        <Row style="margin: 10px;padding-bottom: 10px;border-bottom: 1px solid #495060;min-height: 300px">
+                            <i-col span="24">
+                                <div class="markdown-body" v-html="documentPreview"></div>
+                            </i-col>
+                        </Row>
+                        <Row style="margin: 10px;padding-bottom: 10px;">
+                            <i-col span="12">
+                                <i-button type="default" @click="editDocument" v-if="documentCanEdit">编辑</i-button>
+                                &nbsp;
+                                <i-button type="error" @click="deleteDocument" v-if="documentCanEdit">删除</i-button>
+                            </i-col>
+                            <i-col span="12" style="text-align: right">
+                                <i-button type="default" @click="openDocument(openedObject)">打开完整页面查看</i-button>
+                            </i-col>
+                        </Row>
+                    </template>
+                </i-col>
+            </Row>
+        </Content>
+        <Footer>
+            <ledoc-buttom-bar></ledoc-buttom-bar>
+        </Footer>
+    </Layout>
+</div>
+<script>
+    new Vue({
+        el: '#app',
+        data: {
+            folderTree: [],
+            openedObjectType: 'none',
+            openedObjectKey: null,
+            openedObjectPermissions: [],
+            openedObjectManageable: false,
+            username: '',
+            showPermitPane: false,
+            permitData: {
+                type: 'reader',
+                username_list: []
+            },
+            user_list: [],
+            documentPreview: '',
+            documentCanEdit: false,
+        },
+        computed: {
+            folderTreeNodes: function () {
+                let nodes = {};
+                let ptr = 0;
+                let queue = LeDoc.data.copy(this.folderTree);
+                while (ptr < queue.length) {
+                    //process
+                    if (queue[ptr].children) for (let i = 0; i < queue[ptr].children.length; i++) {
+                        queue.push(queue[ptr].children[i]);
+                    }
+
+                    let node = LeDoc.data.copy(queue[ptr]);
+                    //console.log("ddd",queue,ptr,node);
+                    //delete node.children;
+                    if (node.type === 'dir') {
+                        nodes[JSON.stringify(node.path_components)] = node;
+                    } else if (node.type === 'file') {
+                        let x = LeDoc.data.copy(node.path_components);
+                        x.push(node.doc_hash);
+                        nodes[JSON.stringify(x)] = node;
+                    }
+
+                    ptr += 1;
+                }
+                console.log("folderTreeNodes", nodes);
+                return nodes;
+            },
+            openedObject: function () {
+                if (!this.openedObjectKey) return null;
+                return this.folderTreeNodes[this.openedObjectKey];
+            },
+        },
+        watch: {
+            openedObjectKey: function (newV, oldV) {
+                this.loadFolderUserPermission();
+                this.refreshDocumentPreview();
+            }
+        },
+        methods: {
+            appendTreeNodeRender: function (node) {
+                // 似乎没用了
+                node.render = treeNodeRender;
+                if (node.children) for (let i = 0; i < node.children.length; i++) {
+                    this.appendTreeNodeRender(node.children[i]);
+                }
+            },
+            renderFolderTreeNode: function (h, {root, node, data}) {
+                let isNodeSelected = false;
+                if (data.type === this.openedObjectType) {
+                    isNodeSelected = (data.tree_node_key === this.openedObjectKey);
+                    // if(data.type==='file'){
+                    //     let k=LeDoc.data.copy(data.path_components);
+                    //     /k.push(data.doc_hash);
+                    //     isNodeSelected=(JSON.stringify(k)===this.openedObjectKey);
+                    // }else if (data.type==='dir'){
+                    //     isNodeSelected=(JSON.stringify(data.path_components)===this.openedObjectKey);
+                    // }
+                }
+
+                return h('span', {
+                    style: {
+                        display: 'inline-block',
+                        width: '100%'
+                    }
+                }, [
+                    h('span', [
+                        h('Icon', {
+                            props: {
+                                type: (data.type === 'file' ? 'ios-paper-outline' : 'folder')
+                            },
+                            style: {
+                                marginRight: '8px'
+                            }
+                        }),
+                        h(
+                            'span',
+                            {
+                                style: {
+                                    cursor: 'pointer',
+                                    //background: (isNodeSelected? 'lightgray':'white'),
+                                    background: (isNodeSelected ? '#4fb8ff40' : 'white'),
+                                    padding: '2px',
+                                },
+                                on: {
+                                    click: () => {
+                                        this.onClickFolderTreeNode([data])
+                                    }
+                                }
+                            },
+                            data.title
+                        )
+                    ]),
+                    // h('span', {
+                    //     style: {
+                    //         display: 'inline-block',
+                    //         float: 'right',
+                    //         marginRight: '32px'
+                    //     }
+                    // }, [
+                    //     h('Button', {
+                    //         props: Object.assign({}, this.buttonProps, {
+                    //             icon: 'ios-plus-empty'
+                    //         }),
+                    //         style: {
+                    //             marginRight: '8px'
+                    //         },
+                    //         on: {
+                    //             click: () => { this.append(data) }
+                    //         }
+                    //     }),
+                    //     h('Button', {
+                    //         props: Object.assign({}, this.buttonProps, {
+                    //             icon: 'ios-minus-empty'
+                    //         }),
+                    //         on: {
+                    //             click: () => { this.remove(root, node, data) }
+                    //         }
+                    //     })
+                    // ])
+                ]);
+            },
+            loadFolderTree: function (callback) {
+                let that = this;
+                LeDoc.api.call(
+                    "FolderController/getMyFoldersAsTree",
+                    {},
+                    (data) => {
+                        let folderTree = data.tree;
+                        //that.appendTreeNodeRender(folderTree);
+                        this.folderTree = folderTree;
+
+                        //callback
+                        if (callback) callback();
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载失败：" + error);
+                    }
+                );
+            },
+            onClickFolderTreeNode: function (selectedItems) {
+                console.log("onClickFolderTreeNode arguments", arguments);
+                if (selectedItems.length === 0) return;
+
+                let path_components = selectedItems[0].path_components;
+
+                // this.openedObject = {
+                //     title: selectedItems[0].title,
+                //     path_components: selectedItems[0].path_components,
+                //     children: selectedItems[0].children,
+                //     base:selectedItems[0].base,
+                //     tail:selectedItems[0].tail,
+                // };
+                this.openedObjectType = selectedItems[0].type;
+                this.openedObjectKey = selectedItems[0].tree_node_key;
+                // if (selectedItems[0].type === 'dir') {
+                //     this.openedObjectKey = JSON.stringify(selectedItems[0].path_components);
+                // } else if (selectedItems[0].type === 'file') {
+                //     let x = LeDoc.data.copy(selectedItems[0].path_components);
+                //     x.push(selectedItems[0].doc_hash);
+                //     this.openedObjectKey = JSON.stringify(x);
+                // }
+                console.log(this.folderTreeNodes);
+            },
+            loadSubFolders: function (item, callback) {
+                // 似乎没用了
+                console.log("loadSubFolders arguments", arguments);
+                console.log('loadSubFolders', item);
+                let subFolderList = [];
+                LeDoc.api.call(
+                    "FolderController/browseFolder",
+                    {
+                        root: item.path_components
+                    },
+                    (data) => {
+                        for (let i = 0; i < data.sub_folder_list.length; i++) {
+                            let item = data.sub_folder_list[i];
+                            let node = {
+                                title: item[item.length - 1],
+                                loading: false,
+                                children: [],
+                                path_components: item,
+                                type: 'dir',
+                            };
+                            subFolderList.push(node);
+                        }
+                        callback(subFolderList);
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载目录内容失败：" + error);
+                    }
+                );
+            },
+            createTopFolder: function () {
+                let name = prompt("输入新顶级目录的名字");
+                if (name === null) return;
+                name = name.trim();
+                if (name.length <= 0) {
+                    alert("不能是空白字符串");
+                    return;
+                }
+                LeDoc.api.call(
+                    "FolderController/createSubFolder",
+                    {
+                        parent: [],
+                        name: name
+                    },
+                    (data) => {
+                        this.loadFolderTree();
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "创建失败：" + error);
+                    }
+                )
+            },
+            renameFolder: function () {
+                if (this.openedObjectType !== 'dir' || this.openedObject === null) return;
+                let name = prompt("编辑目录名", this.openedObject.title);
+                if (name === null) return;
+                LeDoc.api.call(
+                    "FolderController/renameFolder",
+                    {
+                        folder: this.openedObject.path_components,
+                        name: name,
+                    },
+                    (data) => {
+                        let newKey = JSON.parse(this.openedObjectKey);
+                        console.log("after rename change old key", newKey);
+                        newKey.splice(newKey.length - 1, 1, name);
+                        newKey = JSON.stringify(newKey);
+                        console.log("rename to new key", newKey);
+
+                        let that = this;
+                        this.loadFolderTree(() => {
+                            this.openedObjectKey = newKey
+                        });
+                        // use computed
+                        //this.openedObject.path_components.splice(this.openedObject.path_components.length - 1, 1, name);
+                        //this.openedObject.title = name;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "目录名称编辑失败。" + error);
+                    }
+                )
+            },
+            createSubFolder: function () {
+                let name = prompt("输入新目录的名字");
+                if (name === null) return;
+                name = name.trim();
+                if (name.length <= 0) {
+                    alert("不能是空白字符串");
+                    return;
+                }
+                LeDoc.api.call(
+                    "FolderController/createSubFolder",
+                    {
+                        parent: this.openedObject.path_components,
+                        name: name
+                    },
+                    (data) => {
+                        this.loadFolderTree();
+
+                        // use computed
+                        // let new_path=JSON.parse(JSON.stringify(this.openedObject.path_components));
+                        // new_path.push(name);
+                        // this.openedObject.children.push({
+                        //     children:[],
+                        //     expand:true,
+                        //     nodeKey:this.openedObject.children.length+1,
+                        //     path_components:new_path,
+                        //     title:name,
+                        //     type:"dir"
+                        // });
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "创建失败：" + error);
+                    }
+                )
+            },
+            removeFolder: function (pathComponents, isOpenedFolder) {
+                if (confirm("要删除文件夹 " + pathComponents.join("/") + " 吗？")) {
+                    LeDoc.api.call(
+                        "FolderController/removeFolder",
+                        {
+                            folder: pathComponents
+                        },
+                        (data) => {
+                            if (this.openedObject.tail.length <= 1) {
+                                this.openedObjectType = 'none';
+                                this.openedObjectKey = null;
+                            } else {
+                                // back to upper folder
+                                let newKey = JSON.parse(this.openedObjectKey);
+                                newKey.splice(newKey.length - 1, 1);
+                                this.openedObjectKey = JSON.stringify(newKey);
+                                this.openedObjectType = 'dir';
+                            }
+                            console.log('after delete folder, this.openedObject type and key', this.openedObjectType, this.openedObjectKey);
+                            this.loadFolderTree();
+                        },
+                        (error, code) => {
+                            LeDoc.ui.showTopAlert(this, error);
+                        }
+                    )
+                }
+            },
+            openSubFolder: function (child) {
+                this.openedObjectKey = child.tree_node_key;//JSON.stringify(child.path_components);
+                this.openedObjectType = 'dir';
+            },
+            openDocument: function (child) {
+                window.location.href = "read.html?folder_hash="
+                    + encodeURIComponent(JSON.stringify(this.openedObject.path_components))
+                    + "&doc_hash=" + encodeURIComponent(child.doc_hash);
+            },
+            editDocument: function () {
+                window.location.href = "edit.html?folder_hash="
+                    + encodeURIComponent(JSON.stringify(this.openedObject.path_components))
+                    + "&doc_hash=" + encodeURIComponent(this.openedObject.doc_hash);
+            },
+            deleteDocument: function () {
+                //TODO
+                LeDoc.api.call(
+                    "DocumentController/removeDocument",
+                    {
+                        folder: this.openedObject.path_components,
+                        doc_hash: this.openedObject.doc_hash,
+                    },
+                    (data) => {
+                        // back to upper folder
+                        this.openedObjectKey = JSON.stringify(this.openedObject.path_components);
+                        this.openedObjectType = 'dir';
+
+                        console.log('after delete file, this.openedObject type and key', this.openedObjectType, this.openedObjectKey);
+                        this.loadFolderTree();
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, error);
+                    }
+                )
+            },
+            createDocument: function () {
+                window.location.href = "edit.html?folder_hash=" + encodeURIComponent(JSON.stringify(this.openedObject.path_components));
+            },
+            closeDesktop: function () {
+                this.openedObjectType = 'none';
+                this.openedObjectKey = null;
+                console.log("close desktop");
+            },
+            openUpperFolder: function (index) {
+                let newKey = JSON.parse(this.openedObjectKey);
+                newKey.splice(home + 1);
+                this.openedObjectKey = JSON.stringify(newKey);
+                this.openedObjectType = 'dir';
+            },
+            loadFolderUserPermission: function () {
+                let folder = JSON.parse(this.openedObjectKey);
+                if (this.openedObjectType === 'file') {
+                    folder.splice(-1, 1);
+                }
+                this.openedObjectPermissions = [];
+                LeDoc.api.call(
+                    "FolderController/getFolderRelatedUsers",
+                    {
+                        folder: folder,
+                    },
+                    (data) => {
+                        console.log(data);
+                        //let result=data.result.by_path;
+                        let result = data.result.by_user;
+                        this.openedObjectPermissions = result;
+                        this.openedObjectManageable = data.result.manageable;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, '并不能获取目录授权信息。' + error);
+                    }
+                )
+            },
+            revokePermission: function (username, event, name) {
+                LeDoc.api.call(
+                    "FolderController/removeFolderUserMapping",
+                    {
+                        folder: this.openedObject.path_components,
+                        username: username
+                    },
+                    (data) => {
+                        this.loadFolderTree();
+                        this.loadFolderUserPermission();
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, '更新用户授权失败。' + error);
+                    }
+                )
+            },
+            loadUserList: function () {
+                LeDoc.api.call(
+                    "UserController/userList",
+                    {
+                        need_details: 'NO',
+                        normal_user_only: 'YES',
+                    },
+                    (data) => {
+                        this.user_list = data.users;
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "加载用户列表失败 " + error);
+                    }
+                );
+            },
+            permitUser: function () {
+                // add user
+                LeDoc.api.call(
+                    "FolderController/addFolderUserMapping",
+                    {
+                        folder: this.openedObject.path_components,
+                        type: this.permitData.type,
+                        username_list: this.permitData.username_list,
+                    },
+                    (data) => {
+                        this.loadFolderUserPermission();
+                        this.permitData = {
+                            type: 'reader',
+                            username_list: [],
+                        };
+                    },
+                    (error, code) => {
+                        LeDoc.ui.showTopAlert(this, "这都能有错。" + error);
+                        this.loadFolderUserPermission();
+                    }
+                )
+            },
+            refreshDocumentPreview: function () {
+                if (this.openedObjectType === 'file') {
+                    console.log('this.openedObject.content', this.openedObject);
+                    // this.documentPreview = marked('this.openedObject.content', { sanitize: true });
+
+                    LeDoc.api.call(
+                        "DocumentController/loadDocument",
+                        {
+                            folder: this.openedObject.path_components,
+                            doc_hash: this.openedObject.doc_hash
+                        },
+                        (data) => {
+                            this.documentCanEdit = data.can_edit;
+                            if (data.doc.type === 'wangeditor') {
+                                this.documentPreview = data.doc.content;
+                            } else {
+                                this.documentPreview = marked(data.doc.content, {sanitize: true});
+                            }
+                        },
+                        (error, code) => {
+                            LeDoc.ui.showTopAlert(this, "加载失败。" + error);
+                        }
+                    )
+                } else {
+                    this.documentPreview = '';
+                }
+            }
+        },
+        mounted: function () {
+            this.username = LeDoc.security.getUsername();
+            this.loadFolderTree();
+            this.loadUserList();
+        }
+    });
+</script>
+</body>
+</html>

@@ -69,7 +69,7 @@
                     {username: this.username, password: this.password},
                     (data) => {
                         LeDoc.security.setToken(data.token, data.expire, data.username, data.realname);
-                        window.location.href = "index.html";
+                        window.location.href = "home.html";
                     },
                     (error, code) => {
                         this.$Message.error({

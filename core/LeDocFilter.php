@@ -38,6 +38,10 @@ class LeDocFilter extends ArkRequestFilter
         ];
         if (self::hasPrefixAmong($path, $publicApiList)) return true;
 
+        if (self::hasPrefixAmong($path, ['/api/DocumentController/uploaded/'])) {
+            return true;
+        }
+
         // Session & Privilege Controller
         $token = Ark()->webInput()->readRequest("token", '');
         $session = SessionEntity::verifyToken($token);

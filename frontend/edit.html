@@ -42,10 +42,10 @@
                                     <i-option value="wangeditor">WangEditor</i-option>
                                 </i-select>
                             </form-item>
-                            <form-item v-if="draft.type==='wangeditor'">
+                            <form-item v-show="draft.type==='wangeditor'">
                                 <div ref="wangeditor" style="text-align:left"></div>
                             </form-item>
-                            <form-item v-else>
+                            <form-item v-show="draft.type==='markdown'">
                                 <i-input type="textarea" v-model="draft.content" :autosize="{ minRows: 10 }"
                                          placeholder="Markdown"></i-input>
                             </form-item>
@@ -81,6 +81,7 @@
 </div>
 <script>
     let E = window.wangEditor;
+
     new Vue({
         el: '#app',
         data: {
@@ -103,7 +104,7 @@
                     (data) => {
                         if (!data.can_edit) {
                             alert("你好像没有权限呢");
-                            window.location.href = "index.html";
+                            window.location.href = "home.html";
                             return;
                         }
                         this.draft = data.doc;
@@ -153,7 +154,7 @@
             let folder_hash = LeDoc.page.getParameterByName("folder_hash", null);
             if (folder_hash === null) {
                 alert("竟然不给出目录");
-                window.location.href = "index.html";
+                window.location.href = "home.html";
                 return;
             }
             this.folder = JSON.parse(folder_hash);
@@ -167,10 +168,20 @@
             editor.customConfig.onchange = (html) => {
                 this.draft.content = html;
             };
-            editor.create();
-
+            //editor.customConfig.uploadImgShowBase64 = true;   // 使用 base64 保存图片
             // TODO upload file! see https://www.kancloud.cn/wangfupeng/wangeditor3/335782
 
+            // 配置服务器端地址
+            editor.customConfig.uploadImgServer = LeDoc.api.apiBaseUrl + 'DocumentController/upload';
+            // editor.customConfig.uploadFileName = 'file[]';
+            editor.customConfig.uploadImgParams = {
+                // 如果版本 <=v3.1.0 ，属性值会自动进行 encode ，此处无需 encode
+                // 如果版本 >=v3.1.1 ，属性值不会自动 encode ，如有需要自己手动 encode
+                token: LeDoc.security.getToken(),
+            };
+
+            // final
+            editor.create();
         }
     });
 </script>

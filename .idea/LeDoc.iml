@@ -6,6 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/vendor/composer" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/psr/log" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/ralouphie/getallheaders" />
+      <excludeFolder url="file://$MODULE_DIR$/vendor/ralouphie/mimey" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/sinri/ark" />
       <excludeFolder url="file://$MODULE_DIR$/vendor/sinri/smallphpmailer" />
     </content>

@@ -146,7 +146,7 @@
                         doc_hash: this.doc_hash,
                     },
                     (data) => {
-                        window.location.href = "index.html";
+                        window.location.href = "home.html";
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, error);
@@ -186,7 +186,7 @@
             let folder_hash = LeDoc.page.getParameterByName("folder_hash", null);
             if (folder_hash === null) {
                 alert("竟然不给出目录");
-                window.location.href = "index.html";
+                window.location.href = "home.html";
                 return;
             }
             this.folder = JSON.parse(folder_hash);
@@ -194,7 +194,7 @@
             this.doc_hash = LeDoc.page.getParameterByName("doc_hash", null);
             if (this.doc_hash === null) {
                 alert("竟然不给出文档");
-                window.location.href = "index.html";
+                window.location.href = "home.html";
                 return;
             }
 

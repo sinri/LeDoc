@@ -126,7 +126,7 @@
                     (error, code) => {
                         //LeDoc.ui.showTopAlert(this, "无法加载用户信息。" + error);
                         alert("无法加载用户信息。" + error);
-                        window.location.replace("index.html");
+                        window.location.replace("home.html");
                     }
                 )
             },
@@ -192,7 +192,7 @@
                 },
                 (privilege) => {
                     if (this.username !== LeDoc.security.getUsername()) {
-                        window.location.replace("index.html");
+                        window.location.replace("home.html");
                     } else {
                         // self center to change name/pw
                         if (this.username && this.username.length > 0) this.loadUserInfo();

@@ -126,4 +126,56 @@ class DocumentController extends LeDocBaseController
             $this->_sayFail($exception->getMessage());
         }
     }
+
+    public function upload()
+    {
+        try {
+            if (!file_exists(__DIR__ . '/../runtime/upload')) {
+                mkdir(__DIR__ . '/../runtime/upload/', 0777, true);
+            }
+            $images = [];
+            $file_keys = array_keys($_FILES);
+            foreach ($file_keys as $file_key) {
+                $this->_getInputHandler()->getUploadFileHelper()->handleUploadFileWithCallback(
+                    $file_key,
+                    function ($original_file_name, $file_type, $file_size, $file_tmp_name, $error) use (&$images) {
+                        $hash_name = md5_file($file_tmp_name) . "." . $original_file_name;
+                        $done = move_uploaded_file($file_tmp_name, __DIR__ . '/../runtime/upload/' . $hash_name);
+                        if (!$done) return false;
+                        $images[] = "../api/DocumentController/uploaded/" . $hash_name;
+                        return true;
+                    },
+                    $uploadError
+                );
+            }
+            $result = [
+                // errno 即错误代码，0 表示没有错误。如果有错误，errno != 0，可通过下文中的监听函数 fail 拿到该错误码进行自定义处理
+                "errno" => 0,
+                // data 是一个数组，返回若干图片的线上地址
+                "data" => $images,
+            ];
+        } catch (\Exception $exception) {
+            $result = ['errno' => 1, 'data' => []];
+        }
+        $this->_getOutputHandler()->json($result);
+    }
+
+    public function uploaded($target)
+    {
+        try {
+            $path = __DIR__ . '/../runtime/upload/' . $target;
+
+            $path_parts = pathinfo($path);
+
+            $mimes = new \Mimey\MimeTypes;
+            // Convert extension to MIME type:
+            $content_type = $mimes->getMimeType($path_parts['extension']); // application/json
+            // Convert MIME type to extension:
+            //$mimes->getExtension('application/json'); // json
+
+            $this->_getOutputHandler()->downloadFileIndirectly($path, $content_type);
+        } catch (\Exception $exception) {
+            $this->_sayFail($exception->getMessage());
+        }
+    }
 }
