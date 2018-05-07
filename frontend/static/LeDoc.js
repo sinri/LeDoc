@@ -109,6 +109,9 @@ let LeDoc = {
     data: {
         copy: function (object) {
             return JSON.parse(JSON.stringify(object));
+        },
+        unifyJSON: function (string) {
+            return JSON.stringify(JSON.parse(string));
         }
     }
 };

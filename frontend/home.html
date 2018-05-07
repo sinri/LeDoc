@@ -230,6 +230,7 @@
                     //console.log("ddd",queue,ptr,node);
                     //delete node.children;
                     if (node.type === 'dir') {
+                        //console.log("debug",node.path_components,JSON.stringify((node.path_components[0])),(JSON.stringify((node.path_components[0]))));
                         nodes[JSON.stringify(node.path_components)] = node;
                     } else if (node.type === 'file') {
                         let x = LeDoc.data.copy(node.path_components);
@@ -347,7 +348,7 @@
                         this.folderTree = folderTree;
 
                         //callback
-                        if (callback) callback();
+                        if (callback && (typeof callback === 'function')) callback();
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, "加载失败：" + error);
@@ -368,7 +369,8 @@
                 //     tail:selectedItems[0].tail,
                 // };
                 this.openedObjectType = selectedItems[0].type;
-                this.openedObjectKey = selectedItems[0].tree_node_key;
+                console.log("debug", selectedItems[0].tree_node_key, typeof selectedItems[0].tree_node_key);
+                this.openedObjectKey = LeDoc.data.unifyJSON(selectedItems[0].tree_node_key);
                 // if (selectedItems[0].type === 'dir') {
                 //     this.openedObjectKey = JSON.stringify(selectedItems[0].path_components);
                 // } else if (selectedItems[0].type === 'file') {
@@ -521,7 +523,7 @@
                 }
             },
             openSubFolder: function (child) {
-                this.openedObjectKey = child.tree_node_key;//JSON.stringify(child.path_components);
+                this.openedObjectKey = LeDoc.data.unifyJSON(child.tree_node_key);//JSON.stringify(child.path_components);
                 this.openedObjectType = 'dir';
             },
             openDocument: function (child) {
