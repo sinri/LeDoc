@@ -116,13 +116,19 @@
                         </Row>
                         <Row style="margin-top: 20px;padding-bottom:20px;">
                             <i-col span="12">
-                                <h2>授权</h2>
+                                <h2>
+                                    授权
+                                    <small v-if="openedObjectIsPublic">(本目录公开可阅览。)</small>
+                                </h2>
                             </i-col>
                             <i-col span="12" style="text-align: right;line-height: 30px;">
-                                显示授权面板&nbsp;
-                                <i-switch size="small" v-model="showPermitPane"></i-switch>
+                                &nbsp;
+                                <template v-if="openedObjectManageable">
+                                    显示授权面板&nbsp;
+                                    <i-switch size="small" v-model="showPermitPane"></i-switch>
+                                </template>
                             </i-col>
-                            <i-col span="24" v-if="showPermitPane">
+                            <i-col span="24" v-if="showPermitPane && openedObjectManageable">
                                 <Row style="border: 1px solid lightsteelblue;margin: 10px;padding: 10px">
                                     <i-col span="2">
                                         <i-button type="text">添加授权</i-button>
@@ -136,13 +142,25 @@
                                     </i-col>
                                     <i-col span="12" offset="1">
                                         <i-select v-model="permitData.username_list" multiple filterable>
-                                            <i-option v-for="user in user_list" :value="user.username">{{user.realname}}
-                                                ({{user.username}})
+                                            <i-option v-for="user in user_list" :value="user.username"
+                                                      v-if="permitData.type==='reader' || user.username!=='*'">
+                                                {{user.realname}} ({{user.username}})
                                             </i-option>
                                         </i-select>
                                     </i-col>
                                     <i-col span="2" offset="1">
                                         <i-button type="default" @click="permitUser">添加</i-button>
+                                    </i-col>
+                                </Row>
+                                <Row style="border: 1px solid lightsteelblue;margin: 10px;padding: 10px"
+                                     v-if="openedObjectIsPublic">
+                                    <i-col span="12" v-if="openedObjectIsPublic">
+                                        目前本目录公开可阅览。
+                                    </i-col>
+                                    <i-col span="12" v-if="openedObjectIsPublic" style="text-align: right">
+                                        <i-button type="error" size="small" @click="revokePermission('*')"
+                                                  v-if="openedObjectManageable">转为非公开目录
+                                        </i-button>
                                     </i-col>
                                 </Row>
                             </i-col>
@@ -205,6 +223,7 @@
             openedObjectKey: null,
             openedObjectPermissions: [],
             openedObjectManageable: false,
+            openedObjectIsPublic: false,
             username: '',
             showPermitPane: false,
             permitData: {
@@ -577,6 +596,7 @@
                     folder.splice(-1, 1);
                 }
                 this.openedObjectPermissions = [];
+                this.openedObjectIsPublic = false;
                 LeDoc.api.call(
                     "FolderController/getFolderRelatedUsers",
                     {
@@ -588,6 +608,7 @@
                         let result = data.result.by_user;
                         this.openedObjectPermissions = result;
                         this.openedObjectManageable = data.result.manageable;
+                        this.openedObjectIsPublic = data.is_public;
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, '并不能获取目录授权信息。' + error);
@@ -618,7 +639,12 @@
                         normal_user_only: 'YES',
                     },
                     (data) => {
-                        this.user_list = data.users;
+                        let user_list = data.users;
+                        user_list.unshift({
+                            realname: "【所有人】",
+                            username: "*",
+                        });
+                        this.user_list = user_list;
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, "加载用户列表失败 " + error);

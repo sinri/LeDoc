@@ -35,12 +35,11 @@ class LeDocFilter extends ArkRequestFilter
             "/api/SecurityController/login",
             "/api/UserController/registerUser",
             "/SiteController/",
+            '/api/DocumentController/uploaded/',
+            "/api/FolderController/getAllPublicFoldersAsTree",
+            "/api/AnonymousReaderController/"
         ];
         if (self::hasPrefixAmong($path, $publicApiList)) return true;
-
-        if (self::hasPrefixAmong($path, ['/api/DocumentController/uploaded/'])) {
-            return true;
-        }
 
         // Session & Privilege Controller
         $token = Ark()->webInput()->readRequest("token", '');

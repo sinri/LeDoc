@@ -18,19 +18,19 @@ use sinri\ledoc\entity\UserEntity;
 
 class FolderController extends LeDocBaseController
 {
-    public function getAllFoldersAsTree()
-    {
-        // wonder if need this
-    }
-
-    public function getMyFoldersAsTree()
+    public function getAllPublicFoldersAsTree()
     {
         try {
-            $topFolders = $this->user->getUserRelatedFolders();
+            $root_folder = FolderEntity::loadFolderByPathComponents([]);
+            $top_folder_list = $root_folder->getSubFolderPathComponents();
 
             $tree = [];
-            for ($topFolderIndex = 0; $topFolderIndex < count($topFolders); $topFolderIndex++) {
-                $node = $this->buildTreeNode($topFolders[$topFolderIndex], count($topFolders[$topFolderIndex]) - 1);
+
+            foreach ($top_folder_list as $top_folder_path_components) {
+                $folder = FolderEntity::loadFolderByPathComponents($top_folder_path_components);
+                if (!$folder) continue;
+                if (!$folder->isPublicReadable()) continue;
+                $node = $this->buildTreeNode($top_folder_path_components, 1, '*');
                 if ($node === false) continue;
                 $tree[] = $node;
             }
@@ -41,7 +41,25 @@ class FolderController extends LeDocBaseController
         }
     }
 
-    protected function buildTreeNode($pathComponents, int $basePathComponentsLength)
+    public function getMyFoldersAsTree()
+    {
+        try {
+            $topFolders = $this->user->getUserRelatedFolders();
+
+            $tree = [];
+            for ($topFolderIndex = 0; $topFolderIndex < count($topFolders); $topFolderIndex++) {
+                $node = $this->buildTreeNode($topFolders[$topFolderIndex], count($topFolders[$topFolderIndex]) - 1, $this->user->username);
+                if ($node === false) continue;
+                $tree[] = $node;
+            }
+
+            $this->_sayOK(['tree' => $tree]);
+        } catch (\Exception $exception) {
+            $this->_sayFail($exception->getMessage());
+        }
+    }
+
+    protected function buildTreeNode($pathComponents, int $basePathComponentsLength, string $username)
     {
         $folder = FolderEntity::loadFolderByPathComponents($pathComponents);
         if (!$folder) return false;
@@ -53,7 +71,7 @@ class FolderController extends LeDocBaseController
 
         $subFolders = $folder->getSubFolderPathComponents();
         foreach ($subFolders as $subFolder) {
-            $children[] = $this->buildTreeNode($subFolder, $basePathComponentsLength);
+            $children[] = $this->buildTreeNode($subFolder, $basePathComponentsLength, $username);
         }
 
         // for files
@@ -70,11 +88,11 @@ class FolderController extends LeDocBaseController
                 'base' => $basePathComponents,
                 "tail" => $realPathComponents,
                 "type" => "file",
-                "expand" => true,
+                "expand" => (count($pathComponents) < 2),
                 //"render"=>"treeNodeRender",
-                "can_manage" => $folder->canUserManage($this->user->username),
-                "can_edit" => $folder->canUserEdit($this->user->username),
-                "can_read" => $folder->canUserRead($this->user->username),
+                "can_manage" => $folder->canUserManage($username),
+                "can_edit" => $folder->canUserEdit($username),
+                "can_read" => $folder->canUserRead($username),
                 "tree_node_key" => $tree_node_key,
             ];
         }
@@ -87,11 +105,11 @@ class FolderController extends LeDocBaseController
             "tail" => $realPathComponents,//for display
             "children" => $children,
             "type" => "dir",
-            "expand" => true,
+            "expand" => (count($pathComponents) < 1),
             //"render"=>"treeNodeRender",
-            "can_manage" => $folder->canUserManage($this->user->username),
-            "can_edit" => $folder->canUserEdit($this->user->username),
-            "can_read" => $folder->canUserRead($this->user->username),
+            "can_manage" => $folder->canUserManage($username),
+            "can_edit" => $folder->canUserEdit($username),
+            "can_read" => $folder->canUserRead($username),
             "tree_node_key" => $tree_node_key,
         ];
 
@@ -211,7 +229,7 @@ class FolderController extends LeDocBaseController
                 }
             }
 
-            $this->_sayOK(['result' => $result]);
+            $this->_sayOK(['result' => $result, 'is_public' => $folder->isPublicReadable()]);
         } catch (\Exception $exception) {
             $this->_sayFail($exception->getMessage());
         }
@@ -226,14 +244,19 @@ class FolderController extends LeDocBaseController
             ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
 
             $username = $this->_readRequest("username");
-            $user = UserEntity::loadUser($username);
-            ArkHelper::quickNotEmptyAssert("用户错误 " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
+            if ($username !== '*') {
+                $user = UserEntity::loadUser($username);
+                ArkHelper::quickNotEmptyAssert("用户错误 " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
+                $folder->removePermissionOfUser($user->username);
 
-            $folder->removePermissionOfUser($user->username);
-            $folder->saveMeta();
+                $folder->saveMeta();
 
-            $user->spliceRelatedTopFolderPath($folder->getPathComponents());
-            $user->saveUser();
+                $user->spliceRelatedTopFolderPath($folder->getPathComponents());
+                $user->saveUser();
+            } else {
+                $folder->removePermissionOfUser('*');
+                $folder->saveMeta();
+            }
 
             $this->_sayOK();
         } catch (\Exception $exception) {
@@ -257,12 +280,17 @@ class FolderController extends LeDocBaseController
             ArkHelper::quickNotEmptyAssert("用户名列表应为数组", $username_list, is_array($username_list));
 
             foreach ($username_list as $username) {
-                $user = UserEntity::loadUser($username);
-                ArkHelper::quickNotEmptyAssert("用户出错 " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
+                if ($username === '*' && $type === 'reader') {
+                    // for reader all
+                    $folder->permitUser($type, '*');
+                } else {
+                    $user = UserEntity::loadUser($username);
+                    ArkHelper::quickNotEmptyAssert("用户出错 " . $username, $user, $user->status === UserEntity::USER_STATUS_NORMAL);
 
-                $folder->permitUser($type, $user->username);
-                $user->whenNewPermissionCreated($folder->getPathComponents());
-                $user->saveUser();
+                    $folder->permitUser($type, $user->username);
+                    $user->whenNewPermissionCreated($folder->getPathComponents());
+                    $user->saveUser();
+                }
             }
             $folder->saveMeta();
 

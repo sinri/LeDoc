@@ -141,11 +141,16 @@ class FolderEntity extends LeDocBaseEntity
      */
     public function isUserRelated(string $username)
     {
+        if (in_array('*', $this->readers)) {
+            return true;
+        }
         if (
             in_array($username, $this->managers)
             || in_array($username, $this->editors)
             || in_array($username, $this->readers)
-        ) return true;
+        ) {
+            return true;
+        }
         if (count($this->pathComponents) > 1) {
             $p = json_decode(json_encode($this->pathComponents), true);
             array_splice($p, -1, 1);
@@ -202,6 +207,22 @@ class FolderEntity extends LeDocBaseEntity
             array_splice($p, -1, 1);
             $parentFolder = FolderEntity::loadFolderByPathComponents($p);
             return $parentFolder->isUserReader($username);
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * @return bool
+     */
+    public function isPublicReadable()
+    {
+        if (in_array('*', $this->readers)) return true;
+        if (count($this->pathComponents) > 1) {
+            $p = json_decode(json_encode($this->pathComponents), true);
+            array_splice($p, -1, 1);
+            $parentFolder = FolderEntity::loadFolderByPathComponents($p);
+            return $parentFolder->isPublicReadable();
         } else {
             return false;
         }
