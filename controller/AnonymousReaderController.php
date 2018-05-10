@@ -55,4 +55,27 @@ class AnonymousReaderController extends LeDocBaseController
             $this->_sayFail($exception->getMessage());
         }
     }
+
+    public function loadPublicDocument()
+    {
+        try {
+            $folderPathComponents = $this->_readRequest("folder");
+            ArkHelper::quickNotEmptyAssert("目录参数不正常", $folderPathComponents, is_array($folderPathComponents));
+            $folder = FolderEntity::loadFolderByPathComponents($folderPathComponents);
+            ArkHelper::quickNotEmptyAssert("目录不正常", $folder);
+
+            ArkHelper::quickNotEmptyAssert("没有权限", $folder->canUserRead('*'));
+
+            $docHash = $this->_readRequest("doc_hash");
+            $doc = DocumentEntity::loadDocument($docHash, $folderPathComponents);
+            ArkHelper::quickNotEmptyAssert("无法加载文档", $doc);
+
+            $this->_sayOK([
+                "doc" => $doc->getDocumentInfo(),
+                "folder" => $folder->getPathComponents(),
+            ]);
+        } catch (\Exception $exception) {
+            $this->_sayFail($exception->getMessage());
+        }
+    }
 }

@@ -14,19 +14,23 @@
 <body>
 <div id="app">
     <Layout>
-        <Header style="padding: 20px;text-align: center;">
-            <h1>Le Document</h1>
+        <Header style="padding: 20px;">
+            <Row>
+                <i-col span="18" style="text-align: left">
+                    <h1>Le Document</h1>
+                </i-col>
+                <i-col span="6" style="text-align: right">
+                    <a href="home.html" target="_blank">
+                        <i-button type="ghost">
+                            进入后台
+                        </i-button>
+                    </a>
+                </i-col>
+            </Row>
         </Header>
         <Content style="background-color: #ffffff;min-height:400px;text-align: left;padding: 20px;">
             <Row>
-                <i-col span="18">
-                    <Row>
-                        <i-col span="24" style="margin: 10px auto">
-                            <div>
-                                轻量级文档维护系统。
-                            </div>
-                        </i-col>
-                    </Row>
+                <i-col span="24">
                     <Row>
                         <i-col span="24" style="margin: 10px auto">
                             <Breadcrumb>
@@ -47,18 +51,15 @@
                             </Row>
                             <Row>
                                 <i-col span="6" v-for="(file,index) in files" :key="index" style="margin: 5px">
-                                    <i-button type="ghost" icon="document" @click="openDocument(file.docHash)">
-                                        {{file.title}}
-                                    </i-button>
+                                    <a :href="openDocument(file.docHash)" target="_blank">
+                                        <i-button type="ghost" icon="document">
+                                            {{file.title}}
+                                        </i-button>
+                                    </a>
                                 </i-col>
                             </Row>
                         </i-col>
                     </Row>
-                </i-col>
-                <i-col span="6">
-                    <div>
-                        <a href="home.html">进入系统</a>
-                    </div>
                 </i-col>
             </Row>
         </Content>
@@ -115,12 +116,11 @@
             },
             openDocument: function (docHash) {
                 // TODO here might be changed to a special reader for anonymous users
-                let url = "read.html?folder_hash="
-                    + encodeURIComponent(JSON.stringify(this.current_folder))
-                    + "&doc_hash=" + encodeURIComponent(docHash)
-                    + "&public=YES";
-                window.open(url);
-            }
+                let url = "read-public.html?folder_hash=" + encodeURIComponent(JSON.stringify(this.current_folder))
+                    + "&doc_hash=" + encodeURIComponent(docHash);
+                //window.open(url);
+                return url;
+            },
         },
         mounted: function () {
             this.loadAllPublicFoldersAsTree([]);
