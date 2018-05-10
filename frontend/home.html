@@ -98,8 +98,9 @@
                                 <h2>内容物</h2>
                             </i-col>
                             <i-col span="6" style="text-align: right">
-                                <i-button type="default" icon="ios-compose-outline" @click="createDocument">新建文档
-                                </i-button>
+                                <a :href="createDocument()" target="_blank">
+                                    <i-button type="default" icon="ios-compose-outline">新建文档</i-button>
+                                </a>
                                 &nbsp;
                                 <i-button type="default" icon="edit" @click="createSubFolder">创建下级目录</i-button>
                             </i-col>
@@ -108,9 +109,11 @@
                                     <i-button type="text" icon="folder" v-if="child.type==='dir'"
                                               @click="openSubFolder(child)">{{child.title}}
                                     </i-button>
-                                    <i-button type="text" icon="document" v-if="child.type==='file'"
-                                              @click="openDocument(child)">{{child.title}}
-                                    </i-button>
+                                    <a :href="openDocument(child)" target="_blank">
+                                        <i-button type="text" icon="document" v-if="child.type==='file'">
+                                            {{child.title}}
+                                        </i-button>
+                                    </a>
                                 </template>
                             </i-col>
                         </Row>
@@ -197,12 +200,16 @@
                         </Row>
                         <Row style="margin: 10px;padding-bottom: 10px;">
                             <i-col span="12">
-                                <i-button type="default" @click="editDocument" v-if="documentCanEdit">编辑</i-button>
+                                <a :href="editDocument()" target="_blank">
+                                    <i-button type="default" v-if="documentCanEdit">编辑</i-button>
+                                </a>
                                 &nbsp;
                                 <i-button type="error" @click="deleteDocument" v-if="documentCanEdit">删除</i-button>
                             </i-col>
                             <i-col span="12" style="text-align: right">
-                                <i-button type="default" @click="openDocument(openedObject)">打开完整页面查看</i-button>
+                                <a :href="openDocument(openedObject)" target="_blank">
+                                    <i-button type="default">打开完整页面查看</i-button>
+                                </a>
                             </i-col>
                         </Row>
                     </template>
@@ -546,14 +553,18 @@
                 this.openedObjectType = 'dir';
             },
             openDocument: function (child) {
-                window.location.href = "read.html?folder_hash="
+                let url = "read.html?folder_hash="
                     + encodeURIComponent(JSON.stringify(this.openedObject.path_components))
                     + "&doc_hash=" + encodeURIComponent(child.doc_hash);
+                // window.location.href=url;
+                return url;
             },
             editDocument: function () {
-                window.location.href = "edit.html?folder_hash="
+                let url = "edit.html?folder_hash="
                     + encodeURIComponent(JSON.stringify(this.openedObject.path_components))
                     + "&doc_hash=" + encodeURIComponent(this.openedObject.doc_hash);
+                //window.location.href = url;
+                return url;
             },
             deleteDocument: function () {
                 //TODO
@@ -577,7 +588,9 @@
                 )
             },
             createDocument: function () {
-                window.location.href = "edit.html?folder_hash=" + encodeURIComponent(JSON.stringify(this.openedObject.path_components));
+                let url = "edit.html?folder_hash=" + encodeURIComponent(JSON.stringify(this.openedObject.path_components));
+                //window.location.href =url;
+                return url;
             },
             closeDesktop: function () {
                 this.openedObjectType = 'none';
