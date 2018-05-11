@@ -43,7 +43,7 @@
                                 </i-select>
                             </form-item>
                             <form-item v-show="draft.type==='wangeditor'">
-                                <div ref="wangeditor" style="text-align:left"></div>
+                                <div ref="wangeditor_create" style="text-align:left"></div>
                             </form-item>
                             <form-item v-show="draft.type==='markdown'">
                                 <i-input type="textarea" v-model="draft.content" :autosize="{ minRows: 10 }"
@@ -62,7 +62,10 @@
                             <form-item>
                                 <i-input type="text" v-model="draft.title" placeholder="标题"></i-input>
                             </form-item>
-                            <form-item>
+                            <form-item v-show="draft.type==='wangeditor'">
+                                <div ref="wangeditor_edit" style="text-align:left"></div>
+                            </form-item>
+                            <form-item v-show="draft.type==='markdown'">
                                 <i-input type="textarea" v-model="draft.content" :autosize="{ minRows: 10 }"
                                          placeholder="Markdown"></i-input>
                             </form-item>
@@ -81,6 +84,7 @@
 </div>
 <script>
     let E = window.wangEditor;
+    let theWangEditor = null;
 
     new Vue({
         el: '#app',
@@ -108,6 +112,8 @@
                             return;
                         }
                         this.draft = data.doc;
+
+                        theWangEditor.txt.html(decodeURI(this.draft.content));
                     },
                     (error, code) => {
                         LeDoc.ui.showTopAlert(this, "加载失败。" + error);
@@ -148,6 +154,31 @@
                         LeDoc.ui.showTopAlert(this, "更新失败。" + error);
                     }
                 )
+            },
+            initWangEditor: function () {
+                console.log("initWangEditor check doc_hash", this.doc_hash);
+                if (this.doc_hash === null) {
+                    theWangEditor = new E(this.$refs.wangeditor_create);
+                } else {
+                    theWangEditor = new E(this.$refs.wangeditor_edit);
+                }
+                theWangEditor.customConfig.onchange = (html) => {
+                    this.draft.content = html;
+                };
+                //theWangEditor.customConfig.uploadImgShowBase64 = true;   // 使用 base64 保存图片
+                // TODO upload file! see https://www.kancloud.cn/wangfupeng/wangeditor3/335782
+
+                // 配置服务器端地址
+                theWangEditor.customConfig.uploadImgServer = LeDoc.api.apiBaseUrl + 'DocumentController/upload';
+                // theWangEditor.customConfig.uploadFileName = 'file[]';
+                theWangEditor.customConfig.uploadImgParams = {
+                    // 如果版本 <=v3.1.0 ，属性值会自动进行 encode ，此处无需 encode
+                    // 如果版本 >=v3.1.1 ，属性值不会自动 encode ，如有需要自己手动 encode
+                    token: LeDoc.security.getToken(),
+                };
+
+                // final
+                theWangEditor.create();
             }
         },
         mounted: function () {
@@ -160,28 +191,14 @@
             this.folder = JSON.parse(folder_hash);
 
             this.doc_hash = LeDoc.page.getParameterByName("doc_hash", null);
-            if (this.doc_hash !== null) {
-                this.loadDocumentToEdit();
-            }
+            let that = this;
+            this.$nextTick(() => {
+                that.initWangEditor();
+                if (that.doc_hash !== null) {
+                    that.loadDocumentToEdit();
+                }
+            });
 
-            let editor = new E(this.$refs.wangeditor);
-            editor.customConfig.onchange = (html) => {
-                this.draft.content = html;
-            };
-            //editor.customConfig.uploadImgShowBase64 = true;   // 使用 base64 保存图片
-            // TODO upload file! see https://www.kancloud.cn/wangfupeng/wangeditor3/335782
-
-            // 配置服务器端地址
-            editor.customConfig.uploadImgServer = LeDoc.api.apiBaseUrl + 'DocumentController/upload';
-            // editor.customConfig.uploadFileName = 'file[]';
-            editor.customConfig.uploadImgParams = {
-                // 如果版本 <=v3.1.0 ，属性值会自动进行 encode ，此处无需 encode
-                // 如果版本 >=v3.1.1 ，属性值不会自动 encode ，如有需要自己手动 encode
-                token: LeDoc.security.getToken(),
-            };
-
-            // final
-            editor.create();
         }
     });
 </script>
