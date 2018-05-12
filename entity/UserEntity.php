@@ -104,6 +104,11 @@ class UserEntity extends LeDocBaseEntity
             $list[] = $folderComponents;
         }
         //if(count($list)!==count($this->folders)) do some fix work
+        usort($list, function ($a, $b) {
+            $xa = implode('@', $a);
+            $xb = implode('@', $b);
+            return $xa > $xb;
+        });
         return $list;
     }
 

@@ -202,6 +202,7 @@ class LeDocDataAgent
         foreach ($globList as $item) {
             $list[] = base64_decode(substr($item, $dirLen));
         }
+        sort($list);
         return $list;
     }
 

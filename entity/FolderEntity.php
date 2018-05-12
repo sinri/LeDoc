@@ -305,8 +305,14 @@ class FolderEntity extends LeDocBaseEntity
             if (strpos($fileName, ".", 0)) continue;
             $path = LeDocDataAgent::getRecordFilePath($this->getEntityDataType(), $fileName, $this->pathComponents);
             if (!file_exists($path) || !is_file($path)) continue;
-            $list[] = $fileName;
+            $fileEntity = new DocumentEntity();
+            $json = LeDocDataAgent::readRecordRawContent(DocumentEntity::DATA_TYPE_DOCUMENT, $fileName, $this->pathComponents);
+            $fileEntity->loadPropertiesFromJson(json_decode($json, true));
+            if (!$fileEntity) continue;
+            $list[$fileEntity->title] = $fileName;
         }
+        ksort($list);
+        $list = array_values($list);
         LeDoc::logger()->debug(__METHOD__ . '@' . __LINE__, ['list' => $list]);
         return $list;
     }
