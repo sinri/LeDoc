@@ -43,7 +43,11 @@ class AnonymousReaderController extends LeDocBaseController
             foreach ($docHashList as $docHash) {
                 $doc = DocumentEntity::loadDocument($docHash, $path_components);
                 if (!$doc) continue;
-                $file_list[] = $doc->encodePropertiesForJson();
+                $file_list[] = [
+                    'docHash' => $doc->docHash,
+                    'title' => $doc->title,
+                ];
+                //$doc->encodePropertiesForJson();
             }
 
             $this->_sayOK([
